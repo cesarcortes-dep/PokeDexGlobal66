@@ -1,6 +1,7 @@
 # Requisitos — trazabilidad
 
 Fuente: enunciado de la prueba (Global66) + correo con enlace a Figma.
+Repo: <https://github.com/cesarcortes-dep/PokeDexGlobal66>
 Cada requisito se transcribe **literal** y se convierte en ítems verificables.
 Nada pasa a `[x]` sin poder demostrarlo corriendo la app.
 
@@ -11,7 +12,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 | ID | Requisito (literal) | Ítems verificables | Estado |
 |----|---------------------|--------------------|--------|
 | F1 | "hacer una lista de pokémons Favoritos" | Marcar/desmarcar favorito desde lista y desde detalle; vista filtrada solo-favoritos; estado consistente entre ambas vistas | `[ ]` |
-| F2 | "La aplicación debe ser creada usando Vue.js" | `package.json` con Vue 3; app monta y buildea | `[ ]` |
+| F2 | "La aplicación debe ser creada usando Vue.js" | `package.json` con Vue 3; app monta y buildea | `[~]` Vue 3.5 + `npm run build` en verde; `vite preview` responde 200 y sirve el HTML. **Falta confirmar el montaje en navegador** — `curl` no ejecuta JS, así que no prueba que Vue monte |
 | F3 | "solo serán necesarios dos llamados: `GET /api/v2/pokemon`" | Un solo request de listado en toda la sesión; verificado en Network | `[ ]` |
 | F4 | "`GET /api/v2/pokemon/${name}`" para info específica | Detalle se pide solo al abrir un Pokémon; resultado cacheado (no re-pide al reabrir) | `[ ]` |
 | F5 | "pantalla de loading … efecto css sobre la imagen de la pokebola" | Loader con animación CSS (no GIF, no lib); visible en carga inicial | `[ ]` |
@@ -30,7 +31,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 
 | ID | Criterio (literal) | Ítems verificables | Estado |
 |----|--------------------|--------------------|--------|
-| E1 | "Crea proyecto de vue.js y subelo a un repositorio de código en github" | Repo público; historial de commits legible (no un único "initial commit") | `[ ]` |
+| E1 | "Crea proyecto de vue.js y subelo a un repositorio de código en github" | Repo público; historial de commits legible (no un único "initial commit") | `[x]` [PokeDexGlobal66](https://github.com/cesarcortes-dep/PokeDexGlobal66) · 4 commits, `docs/` antes que el código |
 | E2 | "Buena implementación de los elementos UI tanto a nivel de código como visualmente" | Componentes de presentación reutilizables, sin lógica de datos adentro; estados hover/focus/disabled/vacío/error cubiertos | `[ ]` |
 | E3 | "Buena arquitectura y diseño de código" | Capas separadas: API client → store → composables → componentes. Componente no llama `fetch` directo | `[ ]` |
 | E4 | "Usar buenas prácticas … KISS, DRY, SOLID" | Sin duplicación de lógica de fetch/formateo; lint sin warnings; funciones con una responsabilidad | `[ ]` |

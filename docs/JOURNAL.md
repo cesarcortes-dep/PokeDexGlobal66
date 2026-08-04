@@ -191,3 +191,27 @@ Anotarlo al implementar.
 
 **Siguiente:** fase 0 apenas llegue el Figma. Mientras, se puede implementar
 `api/pokeApi.ts` con sus tests — es lo único que no depende del diseño.
+
+---
+
+## 2026-08-04 — Repo público arriba: E1 cerrado
+
+**Contexto:** empieza el tachado de `REQUIREMENTS.md`. Primero E1, que no depende
+del diseño ni de nada pendiente.
+
+**Hecho:**
+- Repo público: <https://github.com/cesarcortes-dep/PokeDexGlobal66>
+- `git push -u origin main` — 4 commits, con `docs/` **antes** que el código.
+- **E1 → `[x]`**.
+- **F2 → `[~]`**, a medias a propósito: Vue 3.5 instalado, `npm run build` en verde
+  y `vite preview` devuelve 200 sirviendo el HTML. Pero `curl` no ejecuta
+  JavaScript, así que **no prueba que Vue monte**. Queda pendiente abrirlo en un
+  navegador, o escribir un smoke test con Vue Test Utils que monte `App` y lo
+  verifique de forma automatizada (que además suma a E5).
+
+**Aprendido / fricción:** `Start-Process npm` falla en PowerShell —`npm` es un shim
+`.cmd` y no lo resuelve. Se levantó el server con `npx vite preview` desde bash.
+
+**Siguiente:** seguir tachando lo que no dependa del Figma. El candidato es
+implementar `api/pokeApi.ts` (F3, F4) con sus 11 tests, que cierra también parte
+de E5.
