@@ -96,3 +96,36 @@ nada de `api/` ni de `stores/`. Eso se puede chequear con lint; una carpeta boni
 **Siguiente:** fase 0 — leer el Figma y decidir el layout desktop. Bloqueada por
 acceso. En paralelo se puede scaffoldear el proyecto y escribir la capa `api/`,
 que no depende del diseño.
+
+---
+
+## 2026-08-04 — Scaffold y repo
+
+**Contexto:** fase 0 bloqueada por el acceso al Figma, así que se avanza por lo que
+no depende del diseño: repo y esqueleto del proyecto.
+
+**Hecho:**
+- `git init` + primer commit con `docs/` **antes** que el código. El historial
+  muestra que las decisiones existieron antes que la implementación, que es
+  justamente lo que pide el enunciado ("saber la forma en la que piensas").
+- Scaffold con `create-vue`: Vite 8, Vue 3.5, TS, Pinia, Router, Vitest,
+  ESLint + Prettier. Más `sass-embedded` para los tokens SCSS.
+- Verificado en verde: `npm run build` (type-check + build) y `npm run lint`.
+
+**Decisiones menores:**
+- **Se quitó `oxlint`**, que `create-vue` mete por defecto. Dos motivos: rompía la
+  instalación (`eslint-plugin-oxlint@1.73` pide `oxlint@~1.73` y el scaffold fijaba
+  `~1.74`, ERESOLVE), y duplica el rol de ESLint que ya estaba decidido en ADR-0003.
+  Se descartó `--legacy-peer-deps`: tapa el conflicto en vez de resolverlo, y deja
+  el `npm install` frágil para quien clone el repo.
+- Node 22.19 tira `EBADENGINE` sobre `npm-run-all2` (pide 22.22+). No rompe nada
+  —build y lint pasan— pero queda anotado: si aparece un fallo raro en `npm run
+  build`, actualizar Node es lo primero a probar.
+
+**Aprendido / fricción:** `create-vue` no acepta el directorio actual (`.`) sin
+preguntar el nombre del paquete de forma interactiva. Se scaffoldeó aparte y se
+movió al root, para no perder el `.git` ni `docs/` ya commiteados.
+
+**Siguiente:** limpiar el boilerplate de create-vue (`HelloWorld`, `TheWelcome`,
+`icons/`, `stores/counter.ts`, `AboutView`) y escribir la capa `api/` con sus tipos
+y sus tests. Fase 0 sigue esperando el Figma.
