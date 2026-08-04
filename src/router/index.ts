@@ -1,21 +1,26 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import ListView from '@/views/ListView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      name: 'list',
+      component: ListView,
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
+      // El detalle como ruta da URL compartible y "atrás" del navegador gratis.
+      // Si el Figma lo resuelve como modal, esto cambia (ver ADR-0005 pendiente).
+      path: '/pokemon/:name',
+      name: 'detail',
+      component: () => import('@/views/DetailView.vue'),
+      props: true,
+    },
+    {
+      // TODO: 404 propio si el Figma lo contempla.
+      path: '/:pathMatch(.*)*',
+      redirect: { name: 'list' },
     },
   ],
 })

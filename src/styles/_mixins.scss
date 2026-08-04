@@ -1,0 +1,45 @@
+// Mixins compartidos. Se importan con `@use '@/styles/mixins' as *;`
+//
+// El objetivo es que ningún componente escriba un `@media (min-width: 1024px)`
+// suelto: los breakpoints viven en un solo lugar (_tokens.scss) y se usan por
+// nombre. Eso es lo que hace mantenible la adaptación a desktop de ADR-0002.
+
+@use 'tokens' as t;
+
+@mixin tablet {
+  @media (min-width: t.$bp-tablet) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: t.$bp-desktop) {
+    @content;
+  }
+}
+
+@mixin wide {
+  @media (min-width: t.$bp-wide) {
+    @content;
+  }
+}
+
+/// Corta el texto con puntos suspensivos en una línea.
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/// Oculta visualmente pero lo deja disponible para lectores de pantalla.
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

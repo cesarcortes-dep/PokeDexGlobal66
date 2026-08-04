@@ -1,0 +1,51 @@
+// Design tokens — extraídos del Figma.
+//
+// TODO: reemplazar TODOS los valores por los reales del Figma.
+// Los de acá son placeholders para que el proyecto compile, no son el diseño.
+//
+// Los colores/espaciados van como custom properties para poder usarlos desde
+// cualquier <style scoped> sin importar nada. Los breakpoints van como variables
+// SCSS porque las media queries no aceptan var().
+
+// Breakpoints — variables SCSS (no sirven como custom property en @media)
+$bp-tablet: 768px;
+$bp-desktop: 1024px;
+$bp-wide: 1440px;
+
+:root {
+  // --- Color -------------------------------------------------------------
+  --c-primary: #f22539; // TODO: rojo de la pokebola/botones del Figma
+  --c-bg: #f9f9f9;
+  --c-surface: #ffffff;
+  --c-text: #353535;
+  --c-text-muted: #5e5e5e;
+  --c-border: #e8e8e8;
+  --c-star-active: #eca539;
+  --c-star-idle: #bfbfbf;
+
+  // --- Tipografía --------------------------------------------------------
+  --font-family: 'Lato', system-ui, -apple-system, sans-serif; // TODO: confirmar
+  --fs-body: 1.375rem; // 22px
+  --fs-small: 1.125rem; // 18px
+  --fs-title: 2.25rem; // 36px
+
+  // --- Espaciado (escala de 4) -------------------------------------------
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-6: 1.5rem;
+  --sp-8: 2rem;
+
+  // --- Forma -------------------------------------------------------------
+  --radius-card: 5px;
+  --radius-pill: 60px;
+  --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  // --- Layout ------------------------------------------------------------
+  // Alto de fila FIJO: lo necesita useVirtualList (ADR-0004).
+  // TODO: medirlo en el Figma. Si el diseño tuviera filas de alto variable,
+  // avisar — se cae la estrategia de virtual scroll.
+  --row-height: 60px;
+  --content-max-width: 570px; // mobile. El desktop se define en ADR-0005.
+}

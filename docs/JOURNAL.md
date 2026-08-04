@@ -129,3 +129,65 @@ movió al root, para no perder el `.git` ni `docs/` ya commiteados.
 **Siguiente:** limpiar el boilerplate de create-vue (`HelloWorld`, `TheWelcome`,
 `icons/`, `stores/counter.ts`, `AboutView`) y escribir la capa `api/` con sus tipos
 y sus tests. Fase 0 sigue esperando el Figma.
+
+---
+
+## 2026-08-04 — Andamio: estructura vacía, lista para llenar
+
+**Contexto:** decisión de trabajo — el esqueleto de archivos se arma completo de
+una, con la responsabilidad de cada archivo documentada arriba, y la
+implementación se escribe después archivo por archivo. Así las decisiones de
+arquitectura de ADR-0003 y ADR-0004 quedan visibles en la estructura antes de que
+haya una sola línea de lógica que las contradiga.
+
+**Hecho:**
+- Borrado todo el boilerplate de create-vue (`HelloWorld`, `TheWelcome`,
+  `WelcomeItem`, `icons/`, `counter.ts`, `HomeView`, `AboutView`, `base.css`,
+  `main.css`, `logo.svg`).
+- Estructura creada, cada archivo con su responsabilidad y sus TODO:
+
+  ```
+  src/
+    api/          types.ts, pokeApi.ts, __tests__/pokeApi.spec.ts
+    stores/       pokemon.ts, favorites.ts
+    composables/  useSearch.ts, useVirtualList.ts, useClipboard.ts
+    components/   ui/README.md, features/README.md
+    views/        ListView.vue, DetailView.vue
+    styles/       _tokens.scss, _mixins.scss, main.scss
+  ```
+
+- Router con dos rutas (`/` y `/pokemon/:name`) más catch-all.
+- `_tokens.scss` con la escala completa en placeholders, a reemplazar con los
+  valores reales del Figma.
+- `pokeApi.spec.ts` con 11 `it.todo` — checklist vivo de E5 que aparece en el
+  reporte de Vitest sin romper el build.
+- Verde: `npm run build`, `npm run lint`, `npm run test:unit` (11 todo).
+
+**Decisiones menores:**
+- **Modelo de dominio `Pokemon` separado de `PokemonDetailResponse`.** Los
+  componentes no conocen la forma de la API; si PokéAPI cambia, cambia el mapper y
+  nada más. Es lo que vuelve *verificable* la separación de capas de E3 en vez de
+  declarativa.
+- **`ui/` y `features/` llevan README con la regla, no `.gitkeep`.** La restricción
+  que sostiene la arquitectura es "`ui/` no importa `api/` ni `stores/`", y escrita
+  ahí se lee; una carpeta vacía no dice nada.
+- **Breakpoints como variables SCSS, colores como custom properties.** Las media
+  queries no aceptan `var()`. Los mixins `@include desktop` evitan que aparezca un
+  `@media (min-width: 1024px)` suelto en cada componente — que es justo lo que
+  haría inmanejable la adaptación de ADR-0002.
+- **`prefers-reduced-motion` global desde el día uno**, incluido el loader de F5.
+- **Se revirtió** poner extensión `.ts` en el import de `vitest.config.ts`: silencia
+  un warning de Vite pero dispara `TS5097` salvo que se habilite
+  `allowImportingTsExtensions`. No vale tocar el tsconfig por algo cosmético.
+
+**Aprendido / fricción:** los stubs que lanzan `throw new Error('TODO')` tipan bien
+(un `throw` satisface cualquier retorno declarado), pero ESLint marca los helpers
+privados sin usar. `request()` quedó exportado por eso — igual se justifica: así se
+puede testear el manejo de errores HTTP aislado.
+
+**Pendiente conocido:** `getDetail` y `loadList` del store no tienen todavía control
+de concurrencia. Si se abre el mismo Pokémon dos veces rápido salen dos requests.
+Anotarlo al implementar.
+
+**Siguiente:** fase 0 apenas llegue el Figma. Mientras, se puede implementar
+`api/pokeApi.ts` con sus tests — es lo único que no depende del diseño.
