@@ -1,8 +1,8 @@
 /**
  * Virtual scrolling: renderiza solo la ventana visible (E7, ADR-0004).
  *
- * Es LA respuesta a "pensá en gran cantidad de data". Con ~1300 Pokémon, un
- * `v-for` plano mete 1300 nodos + listeners en el DOM y el scroll se traba.
+ * Es LA respuesta a "pensá en gran cantidad de data". Con ~1350 Pokémon, un
+ * `v-for` plano mete 1350 nodos + listeners en el DOM y el scroll se traba.
  * Con esto los nodos en DOM son constantes (~20) sea la lista de 20 o de 100.000.
  *
  * Implementación propia y no `vue-virtual-scroller`: son ~60 líneas y es justo la
@@ -11,8 +11,12 @@
  *
  * Requiere alto de fila FIJO. Si el Figma tuviera filas de alto variable,
  * esta decisión se cae y hay que revisarla.
+ *
+ * No sabe qué store existe ni qué renderiza: recibe un `Ref` de items y devuelve
+ * geometría. Por eso sirve para cualquier lista y se testea sin montar la app.
  */
 
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 
 export interface UseVirtualListOptions {
@@ -33,19 +37,80 @@ export interface UseVirtualListReturn<T> {
   offsetY: ComputedRef<number>
 }
 
-/**
- * TODO: implementar.
- * - listener de scroll sobre containerRef (con requestAnimationFrame o passive)
- * - startIndex = floor(scrollTop / itemHeight) - overscan
- * - endIndex   = startIndex + ceil(containerHeight / itemHeight) + overscan * 2
- * - limpiar el listener en onUnmounted
- * - accesibilidad: cuidar el foco por teclado al scrollear
- */
 export function useVirtualList<T>(
   items: Ref<T[]>,
   options: UseVirtualListOptions,
 ): UseVirtualListReturn<T> {
-  throw new Error(
-    `TODO: implementar useVirtualList() — ${items.value.length} ítems, ${options.itemHeight}px por fila`,
+  const { itemHeight, overscan = 3 } = options
+
+  const containerRef = ref<HTMLElement | null>(null)
+  const scrollTop = ref(0)
+  const viewportHeight = ref(0)
+
+  /**
+   * El evento `scroll` dispara mucho más seguido que los frames que el navegador
+   * puede pintar. Coalescer en un `requestAnimationFrame` deja como mucho un
+   * recálculo por frame: sin esto, scrollear rápido encola trabajo que ya no sirve.
+   */
+  let frame = 0
+  function onScroll(): void {
+    if (frame) return
+    frame = requestAnimationFrame(() => {
+      frame = 0
+      scrollTop.value = containerRef.value?.scrollTop ?? 0
+    })
+  }
+
+  function measureViewport(): void {
+    viewportHeight.value = containerRef.value?.clientHeight ?? 0
+  }
+
+  /**
+   * Se engancha al contenedor por `watch` y no por `onMounted` a propósito: si el
+   * elemento está detrás de un `v-if` (un loader, por ejemplo) todavía no existe
+   * cuando el componente monta, y con `onMounted` el listener no se ataría nunca.
+   * Así el composable no le impone al que lo usa cuándo tiene que existir el nodo.
+   */
+  watch(containerRef, (el, previous) => {
+    // `passive` le avisa al navegador que no vamos a llamar preventDefault:
+    // puede scrollear sin esperar al handler.
+    previous?.removeEventListener('scroll', onScroll)
+    el?.addEventListener('scroll', onScroll, { passive: true })
+    scrollTop.value = el?.scrollTop ?? 0
+    measureViewport()
+  })
+
+  onMounted(() => window.addEventListener('resize', measureViewport))
+
+  onBeforeUnmount(() => {
+    if (frame) cancelAnimationFrame(frame)
+    containerRef.value?.removeEventListener('scroll', onScroll)
+    window.removeEventListener('resize', measureViewport)
+  })
+
+  /** Cuántas filas entran en el viewport, más el colchón de arriba y abajo. */
+  const visibleCount = computed(() => Math.ceil(viewportHeight.value / itemHeight) + overscan * 2)
+
+  /**
+   * El `Math.min` no es defensivo por gusto: cuando la lista se achica de golpe
+   * (filtrar 1350 a 3 con la búsqueda) el `scrollTop` del navegador todavía apunta
+   * al fondo viejo. Sin el tope, `startIndex` se va más allá del final, el `slice`
+   * devuelve vacío y la pantalla queda en blanco con resultados que sí existen.
+   */
+  const startIndex = computed(() => {
+    const raw = Math.floor(scrollTop.value / itemHeight) - overscan
+    const maxStart = Math.max(0, items.value.length - visibleCount.value)
+    return Math.min(Math.max(0, raw), maxStart)
+  })
+
+  const visibleItems = computed(() =>
+    items.value
+      .slice(startIndex.value, startIndex.value + visibleCount.value)
+      .map((item, i) => ({ item, index: startIndex.value + i })),
   )
+
+  const totalHeight = computed(() => items.value.length * itemHeight)
+  const offsetY = computed(() => startIndex.value * itemHeight)
+
+  return { containerRef, visibleItems, totalHeight, offsetY }
 }

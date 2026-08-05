@@ -43,9 +43,9 @@ $bp-wide: 1440px;
   --shadow-card: 0 2px 4px rgba(0, 0, 0, 0.05);
 
   // --- Layout ------------------------------------------------------------
-  // Alto de fila FIJO: lo necesita useVirtualList (ADR-0004).
-  // TODO: medirlo en el Figma. Si el diseño tuviera filas de alto variable,
-  // avisar — se cae la estrategia de virtual scroll.
-  --row-height: 60px;
+  // OJO: `--row-height` NO se define acá. El alto de fila lo necesita
+  // useVirtualList para calcular offsets, así que la fuente única es la constante
+  // ROW_HEIGHT de ListView.vue, que lo inyecta como custom property. Definirlo
+  // también acá permitiría que CSS y cálculo se desincronicen en silencio.
   --content-max-width: 570px; // mobile. El desktop se define en ADR-0005.
 }
