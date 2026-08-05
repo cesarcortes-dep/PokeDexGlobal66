@@ -12,8 +12,8 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 | ID | Requisito (literal) | Ítems verificables | Estado |
 |----|---------------------|--------------------|--------|
 | F1 | "hacer una lista de pokémons Favoritos" | Marcar/desmarcar favorito desde lista y desde detalle; vista filtrada solo-favoritos; estado consistente entre ambas vistas | `[ ]` |
-| F2 | "La aplicación debe ser creada usando Vue.js" | `package.json` con Vue 3; app monta y buildea | `[~]` Vue 3.5 + `npm run build` en verde; `vite preview` responde 200 y sirve el HTML. **Falta confirmar el montaje en navegador** — `curl` no ejecuta JS, así que no prueba que Vue monte |
-| F3 | "solo serán necesarios dos llamados: `GET /api/v2/pokemon`" | Un solo request de listado en toda la sesión; verificado en Network | `[ ]` |
+| F2 | "La aplicación debe ser creada usando Vue.js" | `package.json` con Vue 3; app monta y buildea | `[x]` Vue 3.5, `npm run build` en verde y **verificado en navegador**: la app monta y `ListView` pinta el listado. Lo que faltaba era justamente esto — `curl` no ejecuta JS |
+| F3 | "solo serán necesarios dos llamados: `GET /api/v2/pokemon`" | Un solo request de listado en toda la sesión; verificado en Network | `[x]` **Verificado en Network:** una sola llamada, `pokeapi.co/api/v2/pokemon?limit=2000`, 200. Payload de 1351 ítems / 91 KB / ~190 ms medido aparte contra la API (la captura salió `from disk cache`, así que no midió red). Sostenido por tests: `loadList()` es idempotente incluso con llamadas concurrentes |
 | F4 | "`GET /api/v2/pokemon/${name}`" para info específica | Detalle se pide solo al abrir un Pokémon; resultado cacheado (no re-pide al reabrir) | `[ ]` |
 | F5 | "pantalla de loading … efecto css sobre la imagen de la pokebola" | Loader con animación CSS (no GIF, no lib); visible en carga inicial | `[ ]` |
 | F6 | "El botón compartir debe copiar en el portapapeles el nombre del pokemon con sus atributos separados por coma" | Click copia string `nombre,attr,attr,…`; feedback visible al usuario; fallback si Clipboard API no disponible | `[ ]` |
@@ -37,7 +37,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 | E4 | "Usar buenas prácticas … KISS, DRY, SOLID" | Sin duplicación de lógica de fetch/formateo; lint sin warnings; funciones con una responsabilidad | `[ ]` |
 | E5 | "Puntos extras si implementas unit test (no excluyente)" | Tests de store (favoritos), del cliente de API (mockeado) y de componentes clave; corren en CI | `[ ]` |
 | E6 | "escribe un resumen de las tecnologías que utilizaste en el readme" | README con stack, motivo de cada elección y enlace a los ADRs | `[ ]` |
-| E7 | "si bien la aplicación es sencilla igual buscamos que pienses en gran cantidad de data al momento de decidir cómo implementarás tu solución" | Lista renderiza ~1300 ítems sin caída de FPS al scrollear; búsqueda sin recalcular todo el árbol; medición documentada | `[ ]` |
+| E7 | "si bien la aplicación es sencilla igual buscamos que pienses en gran cantidad de data al momento de decidir cómo implementarás tu solución" | Lista renderiza ~1300 ítems sin caída de FPS al scrollear; búsqueda sin recalcular todo el árbol; medición documentada | `[~]` `useVirtualList` implementado. Test automatizado: con 1351 Pokémon cargados hay **<30 filas en el DOM**, y la cantidad no cambia con una lista de 100.000. **Falta medir FPS real en navegador** y la parte de búsqueda (F8) |
 
 **E7 es el criterio que más discrimina.** Es el único que no se cumple por prolijidad
 sino por una decisión de arquitectura explícita → [ADR-0004](./decisions/ADR-0004-estrategia-de-datos-y-escala.md).

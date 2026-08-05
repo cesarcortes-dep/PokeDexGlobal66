@@ -59,9 +59,13 @@ en cada tecla.
 
 ## Decisión (propuesta)
 
-- **Un solo `GET /api/v2/pokemon?limit=${count}`** al arrancar, cacheado en el store.
-  Se hacen 2 requests reales la primera vez (una para leer `count`, otra con el
-  `limit`) o directamente `?limit=2000`; a definir al medir.
+- **Un solo `GET /api/v2/pokemon?limit=2000`** al arrancar, cacheado en el store.
+  **Resuelto midiendo (2026-08-05):** `count` real = **1351**. Con `?limit` grande la
+  API devuelve el universo entero en **91 KB / ~190 ms** y `next: null`. Leer `count`
+  primero costaba un round trip extra por 168 bytes, sin ganancia. Se pide directo con
+  holgura, y `fetchPokemonList` compara `results.length` contra `count` para no
+  truncar en silencio si algún día el catálogo supera el techo — truncar daría
+  exactamente los falsos negativos en la búsqueda por los que se descartó paginar.
 - **Virtual scrolling** en la lista. Preferencia por implementación propia en un
   composable `useVirtualList` — es el tipo de decisión que el evaluador quiere ver
   razonada, y evita sumar dependencia por 60 líneas. Si el tiempo aprieta,

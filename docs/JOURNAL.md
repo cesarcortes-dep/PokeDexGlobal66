@@ -215,3 +215,143 @@ del diseño ni de nada pendiente.
 **Siguiente:** seguir tachando lo que no dependa del Figma. El candidato es
 implementar `api/pokeApi.ts` (F3, F4) con sus 11 tests, que cierra también parte
 de E5.
+
+---
+
+## 2026-08-05 — Capa de datos del listado (F3)
+
+**Contexto:** primer requisito funcional que se implementa. Se acota a **traer el
+listado**: nada de detalle, nada de UI. La capa de datos es lo único que no depende
+del Figma, que sigue bloqueado.
+
+**Hecho:**
+- `request<T>()` — wrapper de `fetch`. Unifica los dos modos de falla: `fetch` solo
+  rechaza cuando no hubo respuesta (sin red, DNS, CORS); un 404 o un 500 llegan
+  resueltos con `ok === false`. Ambos salen como `PokeApiError`, y `status` presente
+  o ausente es lo que deja a la UI distinguir "no existe" de "se cayó la red".
+- `fetchPokemonList()` — una request con `?limit=2000`.
+- `extractIdFromUrl()` — id desde la url del listado, sin gastar request.
+- `pokemonStore.loadList()` — idempotente, con manejo de error y de carga.
+- Tests: **14 pasando**, 6 `todo` (los del detalle). Nuevo `stores/__tests__/pokemon.spec.ts`.
+- Verde: `type-check`, `lint`, `test:unit`.
+- **F3 → `[~]`**: la capa de datos está y medida, pero verificarlo en Network exige
+  la app corriendo. No se marca `[x]` sin poder demostrarlo.
+
+**Decisiones menores:**
+- **Se cerró la pregunta abierta de [ADR-0004](./decisions/ADR-0004-estrategia-de-datos-y-escala.md)
+  midiendo, no opinando.** `count` real = 1351. `?limit` grande devuelve todo en
+  **91 KB / ~190 ms** con `next: null`. Leer `count` primero para pedir el total
+  exacto agregaba un round trip por 168 bytes. Gana una sola request.
+- **Red de seguridad sobre el `limit` hardcodeado:** si `results.length < count`, se
+  repite la request con el `count` real. En el caso normal no se dispara nunca. El
+  motivo es que truncar en silencio daría falsos negativos en la búsqueda — el mismo
+  bug por el que se descartó paginar. Un magic number que falla callado no es KISS,
+  es una bomba de tiempo.
+- **Concurrencia resuelta con una promesa en vuelo, no con un booleano.** Estaba
+  anotado como pendiente en la entrada anterior. Un guard `if (isLoadingList) return`
+  no alcanza: si dos vistas montan a la vez, la segunda llamada vuelve sin datos y
+  **sin esperar**. Guardando la promesa, la segunda espera la request de la primera.
+  Hay un test que lo cubre con `Promise.all`.
+
+**Aprendido / fricción:**
+- **Los ids no son contiguos con el índice.** El último ítem del listado es
+  `meowstic-female-mega` con id **10326** sobre 1351 resultados: las formas alternativas
+  viven en un rango alto. Cualquier cosa que dependa del id —una url de sprite armada
+  a mano, por ejemplo— tiene que salir de `extractIdFromUrl`, nunca de la posición.
+- `noUncheckedIndexedAccess` hace que `fetchMock.mock.calls[0][0]` no compile. Se
+  resolvió con un helper `urlOfCall()` en el test en vez de aflojar el tsconfig.
+- Se verificó contra la API real con un script de `vite-node` aparte, fuera del repo.
+  Los tests mockean `fetch` a propósito, así que **no** prueban que el contrato sea el
+  que asumo — solo que mi código hace lo que digo. Las dos cosas hacen falta.
+
+**Siguiente:** renderizar el listado en `ListView`. Ahí aparece el virtual scroll de
+E7 y recién ahí se puede verificar F3 en Network y medir nodos en DOM.
+
+---
+
+## 2026-08-05 — El listado en pantalla, virtualizado (E7)
+
+**Contexto:** con la capa de datos lista, tocaba pintarla. Se decidió virtualizar
+desde el principio en vez de arrancar con un `v-for` plano: el reemplazo posterior
+tocaría el mismo markup dos veces y el commit intermedio mostraría justo lo que
+ADR-0004 descarta.
+
+**Hecho:**
+- `useVirtualList` implementado — ~90 líneas, sin dependencias.
+- `components/ui/PokemonRow.vue` — primera pieza de presentación pura. No importa
+  `@/api` ni `@/stores`: la regla de `ui/README.md` ahora tiene un caso real.
+- `ListView` conectada: estados de carga, error con reintento y lista virtualizada.
+- Tests nuevos: 8 de `useVirtualList` + 6 de `ListView`. **28 pasando**, 6 `todo`.
+- Verde: `type-check`, `lint`, `build`.
+- **E7 → `[~]`**: hay un test que cuenta filas reales en el DOM con 1351 Pokémon
+  cargados y falla si alguien saca la virtualización.
+
+**Decisiones menores:**
+- **El alto de fila lo define TypeScript, no el token SCSS.** `--row-height` salió de
+  `_tokens.scss` y ahora lo inyecta `ListView` como custom property desde la
+  constante `ROW_HEIGHT`. Motivo: `useVirtualList` calcula offsets con ese número; si
+  el CSS tuviera su propia copia, cambiar una sola desalinearía la lista al scrollear
+  **sin romper ningún test**. Una fuente, y el CSS la recibe.
+- **`loadList()` se dispara en `setup`, no en `onMounted`.** La request no necesita el
+  DOM, y arrancarla antes hace que el primer render ya salga con el loader. Con
+  `onMounted` había un frame con la lista vacía antes del estado de carga.
+- **El contenedor del scroll se renderiza siempre**, también durante la carga: es el
+  elemento que hay que medir. Y `useVirtualList` se engancha por `watch` sobre el
+  `containerRef` en vez de por `onMounted`, para no obligar a quien lo use a tener el
+  nodo montado desde el principio.
+- **`contain: layout paint`** en el viewport, sin `size`: el sizer de adentro es quien
+  define el recorrido del scroll y `contain: size` lo anularía.
+- Se corrigió el draft de `ListView`, que llamaba `usePokemonStore()` **dentro del
+  `v-for`**. Funciona porque Pinia devuelve siempre la misma instancia, pero resuelve
+  el store en cada render y mezcla orquestación con template.
+
+**Aprendido / fricción:**
+- **Virtualizar obliga a renderizar dos veces y no hay forma de evitarlo:** para saber
+  cuántas filas entran hay que medir el contenedor, y medir solo es posible después de
+  montar. El primer render sale con el viewport en cero. En el navegador es un frame;
+  en los tests hay que esperarlo con `flushPromises` explícito. El primer intento de
+  test pasaba con 4 filas en vez de 14 justamente por esto.
+- **Un test verde puede estar verde por el motivo equivocado.** El de "los nodos no
+  crecen con la lista" comparaba 4 contra 4 y pasaba, cuando lo correcto era 14 contra
+  14. Se cambió por una aserción contra el número esperado, no contra el otro caso.
+- El tope `Math.min` sobre `startIndex` no es paranoia: cuando la búsqueda filtre 1351
+  a 3 resultados, el `scrollTop` seguirá apuntando al fondo viejo y sin el tope la
+  pantalla queda **en blanco con resultados que sí existen**. Hay un test que lo cubre
+  antes de que exista la búsqueda.
+- jsdom no hace layout: `clientHeight` siempre da 0. Hay que falsearlo o el viewport
+  mide cero filas.
+
+**Pendiente conocido:** accesibilidad del virtual scroll. Hay `aria-posinset` y
+`aria-setsize`, pero navegar con teclado por una lista cuyos nodos se reciclan todavía
+no está resuelto ni testeado.
+
+**Siguiente:** verificar F3 en Network con la app corriendo en el navegador, que es lo
+único que falta para cerrarlo. Después, búsqueda (F8) sobre la lista del store.
+
+---
+
+## 2026-08-05 — F2 y F3 cerrados en el navegador
+
+**Contexto:** los dos requisitos estaban en `[~]` esperando lo mismo: ver la app
+corriendo de verdad. Ningún test automatizado los cierra —jsdom no es un navegador y
+`curl` no ejecuta JavaScript.
+
+**Hecho:**
+- App abierta en el navegador: monta y `ListView` pinta el listado. **F2 → `[x]`**.
+- Network: **una sola** llamada a `pokeapi.co/api/v2/pokemon?limit=2000`, 200.
+  **F3 → `[x]`**.
+
+**Aprendido / fricción:**
+- `LIST_LIMIT` había quedado en `0` mientras se exploraba el comportamiento del
+  parámetro. Con ese valor la API devuelve `results: []` con `count: 1351`, se dispara
+  la red de seguridad y salen **dos** requests. La UI se veía idéntica —los 1351
+  Pokémon aparecían igual— así que el bug era invisible en pantalla y solo se notaba
+  en Network. Buen recordatorio de por qué F3 pedía verificarlo ahí y no "a ojo".
+- La captura de Network dice **`200 OK (from disk cache)`**: el navegador reusó la
+  respuesta y ese request no midió red. No invalida F3 —lo que se evalúa es cuántas
+  llamadas **emite** la app, y fue una— pero los 91 KB y los ~190 ms siguen viniendo
+  de la medición directa contra la API, no de esa captura. Anotado para no citar un
+  número que la evidencia no respalda.
+
+**Siguiente:** búsqueda (F8) sobre la lista del store, que es lo que falta para poder
+cerrar E7 completo.

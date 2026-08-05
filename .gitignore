@@ -37,3 +37,6 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Preparacion personal, no forma parte del proyecto
+docs/_privado/
