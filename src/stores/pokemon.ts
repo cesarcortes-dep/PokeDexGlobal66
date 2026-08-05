@@ -7,6 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
+import { PokeApiError, fetchPokemonList } from '@/api/pokeApi'
 import type { Pokemon, PokemonListItem } from '@/api/types'
 
 export const usePokemonStore = defineStore('pokemon', () => {
@@ -25,11 +26,41 @@ export const usePokemonStore = defineStore('pokemon', () => {
   const isLoaded = computed(() => list.value.length > 0)
 
   /**
-   * TODO: pedir el listado una sola vez (idempotente: si ya está cargado, salir).
-   * Manejar isLoadingList y error. Ver F3.
+   * Request en curso. No es estado reactivo ni sale del store: existe solo para
+   * que dos llamadas concurrentes compartan la misma promesa.
+   *
+   * Un guard con un booleano no alcanza para F3: si la lista y el detalle montan
+   * a la vez, el segundo `loadList()` vería `isLoadingList === true` y volvería
+   * sin datos y sin esperar. Acá el segundo espera la request del primero.
+   */
+  let inFlight: Promise<void> | null = null
+
+  /**
+   * Trae el universo completo UNA sola vez por sesión (F3).
+   *
+   * Idempotente por diseño: se puede llamar desde cualquier vista sin coordinar
+   * quién carga. Si ya está en memoria, no toca la red.
    */
   async function loadList(): Promise<void> {
-    throw new Error('TODO: implementar loadList()')
+    if (isLoaded.value) return
+    if (inFlight) return inFlight
+
+    isLoadingList.value = true
+    error.value = null
+
+    inFlight = (async () => {
+      try {
+        list.value = await fetchPokemonList()
+      } catch (cause) {
+        error.value =
+          cause instanceof PokeApiError ? cause.message : 'No se pudo cargar el listado de Pokémon'
+      } finally {
+        isLoadingList.value = false
+        inFlight = null
+      }
+    })()
+
+    return inFlight
   }
 
   /**

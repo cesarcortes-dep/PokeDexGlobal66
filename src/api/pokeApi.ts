@@ -5,9 +5,26 @@
  * Solo dos endpoints permitidos por el enunciado (F3, F4).
  */
 
-import type { Pokemon, PokemonDetailResponse, PokemonListItem } from './types'
+import type {
+  Pokemon,
+  PokemonDetailResponse,
+  PokemonListItem,
+  PokemonListResponse,
+} from './types'
 
 const BASE_URL = 'https://pokeapi.co/api/v2'
+
+/**
+ * Techo para pedir el universo entero en una sola request.
+ *
+ * Medido el 2026-08-05: `count` = 1351. Con `?limit=100000` la API devuelve todo
+ * en 91 KB y `next: null`. Leer `count` primero costaría un round trip extra por
+ * 168 bytes, así que se pide directo con holgura.
+ *
+ * Si algún día el catálogo supera este número, `fetchPokemonList` lo detecta y
+ * corrige: truncar en silencio daría falsos negativos en la búsqueda.
+ */
+const LIST_LIMIT = 2000
 
 /** Error tipado para que la UI distinga "no existe" de "se cayó la red". */
 export class PokeApiError extends Error {
@@ -21,26 +38,47 @@ export class PokeApiError extends Error {
 }
 
 /**
- * TODO: wrapper de `fetch` con manejo de errores.
- * - lanzar PokeApiError si !response.ok (con el status)
- * - lanzar PokeApiError si el fetch falla (sin red)
- * - devolver el JSON tipado
+ * Wrapper de `fetch`. Todo lo que sale a la red pasa por acá.
+ *
+ * Normaliza los dos modos de falla en un único tipo de error: `fetch` solo
+ * rechaza si no hubo respuesta (sin red, CORS, DNS); un 404 o un 500 llegan como
+ * promesa resuelta con `ok === false`. La UI necesita distinguirlos, y con
+ * `status` puede.
  */
 export async function request<T>(path: string): Promise<T> {
-  throw new PokeApiError(`TODO: implementar request() para ${BASE_URL}${path}`)
+  let response: Response
+
+  try {
+    response = await fetch(`${BASE_URL}${path}`)
+  } catch {
+    throw new PokeApiError(`No se pudo conectar con la PokéAPI (${path})`)
+  }
+
+  if (!response.ok) {
+    throw new PokeApiError(`La PokéAPI respondió ${response.status} en ${path}`, response.status)
+  }
+
+  return (await response.json()) as T
 }
 
 /**
- * Listado completo en UNA request (ADR-0004).
+ * Listado completo en UNA request (ADR-0004, F3).
  *
  * OJO: sin `limit` la API devuelve 20. Hay que pedir el universo entero para que
  * la búsqueda no dé falsos negativos.
  *
- * TODO: decidir entre pedir `?limit=1` para leer `count` y después el total,
- * o mandar un `?limit=` grande de una. Medir y anotar el resultado en el journal.
+ * El chequeo `results.length < count` es la red de seguridad de `LIST_LIMIT`:
+ * en el caso normal no se cumple nunca y la función hace una sola request.
  */
 export async function fetchPokemonList(): Promise<PokemonListItem[]> {
-  throw new PokeApiError('TODO: implementar fetchPokemonList()')
+  const page = await request<PokemonListResponse>(`/pokemon?limit=${LIST_LIMIT}`)
+
+  if (page.results.length < page.count) {
+    const full = await request<PokemonListResponse>(`/pokemon?limit=${page.count}`)
+    return full.results
+  }
+
+  return page.results
 }
 
 /** Detalle de un Pokémon. Se llama solo al abrirlo, nunca en bucle sobre la lista. */
@@ -60,5 +98,11 @@ export function toPokemon(raw: PokemonDetailResponse): Pokemon {
 
 /** Extrae el id de la url del listado, sin gastar una request. Ej: ".../pokemon/25/" → 25 */
 export function extractIdFromUrl(url: string): number {
-  throw new Error(`TODO: implementar extractIdFromUrl() para "${url}"`)
+  const match = url.match(/\/pokemon\/(\d+)\/?$/)
+
+  if (!match) {
+    throw new PokeApiError(`URL de listado con formato inesperado: "${url}"`)
+  }
+
+  return Number(match[1])
 }
