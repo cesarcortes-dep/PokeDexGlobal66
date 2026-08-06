@@ -12,9 +12,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { flushPromises, mount } from '@vue/test-utils'
-import { createRouter, createWebHistory } from 'vue-router'
 import ListView from '../ListView.vue'
 import { PokeApiError } from '@/api/pokeApi'
+import {
+  DEBOUNCE_MS,
+  ROW_HEIGHT,
+  TOTAL_POKEMON,
+  makeListItems,
+  makeTestRouter,
+  stubViewportHeight,
+} from '@/__tests__/fixtures'
 
 const { fetchPokemonListMock } = vi.hoisted(() => ({ fetchPokemonListMock: vi.fn() }))
 
@@ -23,37 +30,10 @@ vi.mock('@/api/pokeApi', async (importOriginal) => ({
   fetchPokemonList: fetchPokemonListMock,
 }))
 
-/** El universo real medido contra la PokéAPI el 2026-08-05. */
-const TOTAL_POKEMON = 1351
-const VIEWPORT_HEIGHT = 600
-const ROW_HEIGHT = 60
-const DEBOUNCE_MS = 200
-
-function makeList(n: number) {
-  return Array.from({ length: n }, (_, i) => ({
-    name: `pokemon-${i}`,
-    url: `https://pokeapi.co/api/v2/pokemon/${i + 1}/`,
-  }))
-}
-
-/**
- * Router real y no un stub de `RouterLink`: la fila navega al detalle, y con un
- * stub el test no probaría que el `to` está bien armado.
- */
-function makeRouter() {
-  return createRouter({
-    history: createWebHistory(),
-    routes: [
-      { path: '/', name: 'list', component: ListView },
-      { path: '/pokemon/:name', name: 'detail', component: { template: '<div />' } },
-    ],
-  })
-}
-
 function mountView() {
   return mount(ListView, {
     attachTo: document.body,
-    global: { plugins: [makeRouter()] },
+    global: { plugins: [makeTestRouter()] },
   })
 }
 
@@ -69,13 +49,8 @@ async function search(wrapper: ReturnType<typeof mountView>, text: string) {
 beforeEach(() => {
   setActivePinia(createPinia())
   fetchPokemonListMock.mockReset()
-  fetchPokemonListMock.mockResolvedValue(makeList(TOTAL_POKEMON))
-
-  // jsdom no hace layout: sin esto el viewport mide 0 y no entra ninguna fila.
-  Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
-    configurable: true,
-    value: VIEWPORT_HEIGHT,
-  })
+  fetchPokemonListMock.mockResolvedValue(makeListItems(TOTAL_POKEMON))
+  stubViewportHeight()
 })
 
 describe('ListView', () => {

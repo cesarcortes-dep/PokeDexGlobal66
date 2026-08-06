@@ -9,11 +9,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { flushPromises, mount } from '@vue/test-utils'
-import { createRouter, createWebHistory } from 'vue-router'
 import DetailView from '../DetailView.vue'
-import ListView from '../ListView.vue'
 import { PokeApiError } from '@/api/pokeApi'
 import { useFavoritesStore } from '@/stores/favorites'
+import { PIKACHU, makeTestRouter } from '@/__tests__/fixtures'
 
 const { fetchPokemonListMock, fetchPokemonByNameMock } = vi.hoisted(() => ({
   fetchPokemonListMock: vi.fn(),
@@ -26,27 +25,8 @@ vi.mock('@/api/pokeApi', async (importOriginal) => ({
   fetchPokemonByName: fetchPokemonByNameMock,
 }))
 
-const PIKACHU = {
-  id: 25,
-  name: 'pikachu',
-  height: 0.4,
-  weight: 6,
-  types: ['electric'],
-  imageUrl: 'https://img/artwork.png',
-}
-
-function makeRouter() {
-  return createRouter({
-    history: createWebHistory(),
-    routes: [
-      { path: '/', name: 'list', component: ListView },
-      { path: '/pokemon/:name', name: 'detail', component: DetailView, props: true },
-    ],
-  })
-}
-
 async function mountDetail(name = 'pikachu') {
-  const router = makeRouter()
+  const router = makeTestRouter()
   await router.push({ name: 'detail', params: { name } })
   await router.isReady()
 

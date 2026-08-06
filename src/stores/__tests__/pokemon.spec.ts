@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { usePokemonStore } from '../pokemon'
 import { PokeApiError } from '@/api/pokeApi'
+import { PIKACHU, makeListItems } from '@/__tests__/fixtures'
 
 const { fetchPokemonListMock, fetchPokemonByNameMock } = vi.hoisted(() => ({
   fetchPokemonListMock: vi.fn(),
@@ -22,19 +23,7 @@ vi.mock('@/api/pokeApi', async (importOriginal) => ({
   fetchPokemonByName: fetchPokemonByNameMock,
 }))
 
-const PIKACHU = {
-  id: 25,
-  name: 'pikachu',
-  height: 0.4,
-  weight: 6,
-  types: ['electric'],
-  imageUrl: 'https://img/artwork.png',
-}
-
-const ITEMS = [
-  { name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' },
-  { name: 'ivysaur', url: 'https://pokeapi.co/api/v2/pokemon/2/' },
-]
+const ITEMS = makeListItems(2)
 
 beforeEach(() => {
   setActivePinia(createPinia())

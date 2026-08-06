@@ -1,0 +1,45 @@
+# CI (E5).
+#
+# Las cuatro verificaciones que ya se corren a mano, corriendo solas en cada push
+# y cada pull request. El punto no es el badge: es que "los tests pasan" deje de
+# ser algo que hay que creerme.
+#
+# Sin `continue-on-error` en ningún paso a propósito: un check que no puede fallar
+# no verifica nada.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` y no `npm install`: instala exactamente lo del lockfile y falla
+      # si package.json y package-lock.json no coinciden.
+      - run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      # `lint:check` y no `lint`: el script de desarrollo lleva --fix, que en CI
+      # arreglaría los errores en silencio y pasaría siempre.
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Tests
+        run: npm run test:unit -- run
+
+      - name: Build
+        run: npm run build-only

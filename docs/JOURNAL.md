@@ -598,3 +598,70 @@ abiertos. Se cierran antes de arrancar fase 0 para no acumularlos.
   nadie probó es indistinguible de una que no funciona.
 
 **Siguiente:** fase 0 — el Figma. Es lo único que queda bloqueando F5, F6, D1, D2 y E2.
+
+---
+
+## 2026-08-06 — E7 cerrado con medición de scroll
+
+**Contexto:** faltaba el único número de E7 que no se podía sacar de un test: el
+comportamiento del scroll en un navegador real.
+
+**Hecho:** grabación en DevTools Performance sobre ~8 s de scroll continuo con los
+1351 Pokémon cargados. **INP 6 ms**, **CLS 0**, banda de Frames en verde, 18 *passed
+insights*. **E7 → `[x]`**. Los números quedan en el README.
+
+**Aprendido / fricción:**
+- **CLS 0 no es casualidad, es el sizer.** El div que tiene el alto de la lista
+  completa mantiene la altura del contenido constante mientras las filas se reciclan;
+  sin él habría saltos de layout en cada recálculo de la ventana.
+- **Se anota el defecto, no solo el número bueno:** hay un grupo chico de frames
+  caídos al arrancar el gesto de scroll. Decir "60fps constante" sería más lindo y
+  menos cierto, y es exactamente el tipo de afirmación que alguien puede verificar en
+  vivo.
+- **LCP salió vacío** porque la grabación empezó con la página ya cargada. No invalida
+  nada: E7 pregunta por el scroll, no por la carga inicial.
+- Corrección de rumbo: E7, E4 y E5 **no** dependían del Figma. Se habían agrupado por
+  error con lo bloqueado por diseño, que es solo F5, F6 (el botón), D1, D2 y E2.
+
+---
+
+## 2026-08-06 — Revisar E4 y E5 en serio, no darlos por buenos
+
+**Contexto:** los dos criterios que quedaban sin depender del Figma. La tentación era
+marcarlos hechos porque "el lint pasa y hay tests"; la revisión encontró dos cosas.
+
+**Hecho:**
+- **Duplicación real, en los tests.** `PIKACHU` estaba definido en dos specs y el
+  router de prueba en otros dos. Se extrajo todo a `src/__tests__/fixtures.ts`. **E4 →
+  `[x]`**.
+- **CI, que no existía.** El ítem de E5 dice literal "corren en CI" y no había
+  workflow: la afirmación no tenía respaldo. Se agregó `.github/workflows/ci.yml` con
+  type-check, lint, tests y build. **E5 → `[~]`** hasta la primera corrida verde.
+- Script `lint:check` sin `--fix`, y el README con la sección de ADR-0001.
+
+**Decisiones menores:**
+- **`lint:check` separado de `lint`.** El script de desarrollo lleva `--fix`, que en CI
+  arreglaría los errores en silencio y pasaría siempre. Un check que no puede fallar no
+  verifica nada — por lo mismo, ningún paso lleva `continue-on-error`.
+- **`npm ci` y no `npm install`** en el workflow: instala exactamente lo del lockfile y
+  falla si `package.json` y `package-lock.json` divergen.
+- **Los fixtures viven en `src/__tests__/`** y no en una carpeta nueva: Vitest solo
+  recoge `*.spec.ts`, así que el archivo no se ejecuta como suite, y no hace falta
+  inventar una capa que ADR-0006 no contempla.
+- **El `vi.mock` del cliente de API no se puede compartir.** Se hoistea al tope del
+  archivo que lo declara, así que cada spec arma el suyo. Queda anotado en el fixture
+  para que no parezca un olvido.
+
+**Aprendido / fricción:**
+- **El código de `src/` estaba limpio; la duplicación estaba en los tests.** Es el
+  lugar donde uno deja de aplicarse las reglas que predica, y E4 evalúa DRY sin
+  distinguir entre código de producción y de prueba.
+- **E5 se estaba por marcar hecho con un ítem incumplido.** "Corren en CI" era falso.
+  Revisar el criterio contra su propia lista, y no contra la impresión general, es lo
+  que lo detectó.
+- E5 queda en `[~]` a propósito: el workflow existe y los cuatro comandos se
+  verificaron localmente, pero hasta que GitHub Actions no corra en verde, decir que
+  los tests corren en CI sería exactamente el tipo de afirmación sin respaldo que este
+  documento existe para evitar.
+
+**Siguiente:** push para que corra el CI, y fase 0 — el Figma.

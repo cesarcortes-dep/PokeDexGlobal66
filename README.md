@@ -87,8 +87,14 @@ la API de verdad:
 | Pokémon en el catálogo (`count`) | **1351** |
 | Listado completo (`?limit=2000`) | **91 KB**, ~190 ms, **una sola request** |
 | Filas en el DOM con la lista completa | **< 30** (vs. 1351 con un `v-for` plano) |
+| INP al scrollear (DevTools Performance) | **6 ms** — el umbral "bueno" de Google es 200 ms |
+| CLS | **0** |
 | Filtrar con índice precomputado | **0.108 ms** por tecla |
 | Filtrar normalizando dentro del `filter` | 0.188 ms por tecla |
+
+*Medición de scroll sobre ~8 s de gesto continuo con la lista completa cargada. La
+banda de Frames queda en verde salvo un grupo chico de frames caídos al arrancar el
+gesto.*
 
 Con esos números, "gran cantidad de data" no es un problema de red: **es un problema
 de render y de filtrado en cliente.** Las decisiones que siguen de ahí:
@@ -109,6 +115,28 @@ de render y de filtrado en cliente.** Las decisiones que siguen de ahí:
 
 Razonamiento completo en [ADR-0004](./docs/decisions/ADR-0004-estrategia-de-datos-y-escala.md).
 
+## Orden de trabajo: funcionalidad antes que interfaz
+
+Fue una decisión explícita y tomada antes de escribir código
+([ADR-0001](./docs/decisions/ADR-0001-funcionalidad-antes-que-ui.md)): primero que la
+app **funcione y sea correcta**, después el refinamiento visual.
+
+El motivo es de riesgo. Los problemas difíciles de este proyecto son de
+comportamiento —traer 1351 Pokémon sin trabar el scroll, que la búsqueda no dé falsos
+negativos, que el detalle no se vuelva a pedir— y ninguno se resuelve maquetando. Una
+pantalla linda sobre datos mal resueltos hay que rehacerla; una pantalla fea sobre
+datos bien resueltos solo hay que pintarla.
+
+La consecuencia visible: **lo que está construido tiene estilos mínimos, no la maqueta
+del Figma.** Eso es la fase pendiente, no un descuido.
+
+Con una enmienda, que también está documentada
+([ADR-0002](./docs/decisions/ADR-0002-figma-desktop-primero-en-diseno.md)): el
+enunciado pide adaptar un diseño mobile a desktop, y **esa** parte no es pulido — es
+una decisión de estructura, porque una lista full-width en mobile y dos paneles en
+desktop no son los mismos componentes. Así que la *decisión* de layout sube antes del
+código de UI, aunque la *implementación* visual siga yendo al final.
+
 ## Decisiones que parecen omisiones y no lo son
 
 **Los favoritos se pierden al recargar.** Es deliberado. El enunciado pide
@@ -122,8 +150,12 @@ listado exigiría 1351 requests. La imagen aparece en el detalle.
 
 ## Tests
 
-67 tests. Cada uno mockea **solo la capa de abajo**, que es algo que únicamente se
-puede hacer si las capas existen de verdad.
+89 tests, corriendo en [CI](./.github/workflows/ci.yml) en cada push y cada pull
+request: type-check, lint, tests y build. Ningún paso lleva `continue-on-error` — un
+check que no puede fallar no verifica nada.
+
+Cada test mockea **solo la capa de abajo**, que es algo que únicamente se puede hacer
+si las capas existen de verdad.
 
 | Test | Qué prueba | Qué mockea |
 |---|---|---|
@@ -131,6 +163,8 @@ puede hacer si las capas existen de verdad.
 | `stores/__tests__/pokemon.spec.ts` | Las reglas: que el listado se pide una sola vez incluso con llamadas concurrentes, y que el detalle se cachea | el cliente de API |
 | `composables/__tests__/useVirtualList.spec.ts` | Que la ventana renderizada no crece con el tamaño de la lista | nada |
 | `composables/__tests__/useSearch.spec.ts` | Debounce, normalización y estado vacío | nada |
+| `composables/__tests__/useClipboard.spec.ts` | Los dos caminos que se rompen en producción: sin HTTPS y con permiso denegado | `navigator.clipboard` |
+| `stores/__tests__/favorites.spec.ts` | Que se guardan nombres y no entidades | nada |
 | `views/__tests__/ListView.spec.ts` | Que las piezas juntas dan menos de 30 filas en el DOM con 1351 Pokémon | solo la red |
 | `views/__tests__/DetailView.spec.ts` | Que reabrir un Pokémon ya visto no dispara request | solo la red |
 
@@ -138,10 +172,10 @@ puede hacer si las capas existen de verdad.
 
 | Hecho | Pendiente |
 |---|---|
-| Listado completo virtualizado | Favoritos (F1, F7) |
-| Búsqueda en cliente | Loader de pokebola con animación CSS (F5) |
-| Detalle cacheado por nombre | Botón compartir al portapapeles (F6) |
-| | Maqueta fiel al Figma y adaptación a desktop (D1, D2) |
+| Listado completo virtualizado | Loader de pokebola con animación CSS (F5) |
+| Búsqueda en cliente | Botón compartir en el detalle (F6 — la lógica de copiado ya está) |
+| Detalle cacheado por nombre | Maqueta fiel al Figma y adaptación a desktop (D1, D2) |
+| Favoritos, con vista filtrada | |
 
 ## Documentación
 
