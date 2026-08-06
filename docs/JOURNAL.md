@@ -449,3 +449,53 @@ de API venían esperando desde el andamio: era el momento de cobrarlos.
 
 **Siguiente:** verificar F4 en Network —abrir un Pokémon, volver, reabrirlo y confirmar
 que la segunda vez no hay request—. Después F1 y F7, favoritos.
+
+---
+
+## 2026-08-06 — README propio (E6)
+
+**Contexto:** el README seguía siendo el boilerplate de `create-vue` —"This template
+should help get you started"— y es el primer archivo que abre quien evalúa. E6 lo pide
+explícito, así que no era un pendiente cosmético.
+
+**Hecho:** README completo. **E6 → `[x]`**.
+
+**Decisiones menores:**
+- **El README indexa los ADRs, no los repite.** Dice *qué* se decidió y en una línea
+  *por qué*; el razonamiento con las opciones descartadas se queda en el ADR. Copiarlo
+  daría dos fuentes que se desincronizan y haría leer lo mismo dos veces.
+- **La tabla de stack tiene una columna "qué descarté".** El enunciado no pregunta qué
+  usé, pregunta cómo pienso. Nuxt, Tailwind, axios y Vuex comunican más que la lista
+  de lo elegido.
+- **Se escribió ahora y no al final.** Las secciones de stack, arquitectura y
+  decisiones ya estaban cerradas y no van a cambiar; lo único volátil es el bloque de
+  estado. Y elimina el riesgo de entregar con el boilerplate puesto.
+- **No promete lo que la app todavía no hace.** Favoritos y fidelidad al Figma están en
+  la tabla de pendientes, no descritos como si existieran.
+
+**Siguiente:** sigue igual — verificar F4 en Network, después favoritos (F1, F7).
+
+---
+
+## 2026-08-06 — F4 cerrado en Network
+
+**Contexto:** último requisito de datos pendiente de verificación en navegador.
+
+**Hecho:** recorrido completo con "Disable cache" activo — abrir `bulbasaur` dispara
+una request 200; volver al listado no repite la del listado; reabrir el mismo Pokémon
+no dispara ninguna. **F4 → `[x]`**.
+
+**Aprendido / fricción:**
+- **La vuelta al listado probó algo que F4 no pedía:** no se repite la request de la
+  lista. Es `loadList()` siendo idempotente en el navegador y no solo en los tests —
+  evidencia de uso real que refuerza F3.
+- Los tres requisitos de red se verifican en el mismo lugar y con evidencia distinta:
+  **F3 cuenta una llamada, F8 cuenta cero, F4 cuenta una la primera vez y cero la
+  segunda.** Es la diferencia entre las dos aperturas, no una sola captura, lo que
+  prueba el caché.
+- El caché vive en memoria: recargar la página entera lo vacía y la request vuelve.
+  Es correcto y es lo que pide el enunciado (sin persistencia), pero arruinaría la
+  prueba si se recarga en lugar de navegar dentro de la app.
+
+**Siguiente:** favoritos (F1, F7). Es el último bloque funcional que no depende del
+Figma.
