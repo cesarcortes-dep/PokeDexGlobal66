@@ -1,7 +1,7 @@
 # ADR-0004 — Estrategia de datos y escala
 
 - **Fecha:** 2026-08-04
-- **Estado:** Propuesta
+- **Estado:** Aceptada — implementada y medida el 2026-08-05 (ver `Decisión`)
 
 ## Contexto
 

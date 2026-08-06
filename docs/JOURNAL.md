@@ -557,3 +557,44 @@ olvido.
 
 **Siguiente:** todo lo que queda depende del Figma — F5 (loader), F6 (compartir),
 D1 y D2 (maqueta y desktop). Fase 0 pasa a ser el bloqueante real del proyecto.
+
+---
+
+## 2026-08-06 — Cerrar las deudas antes de entrar al Figma
+
+**Contexto:** tres pendientes que no dependían del diseño y llevaban varios pasos
+abiertos. Se cierran antes de arrancar fase 0 para no acumularlos.
+
+**Hecho:**
+- **Regla de capas ejecutable.** `no-restricted-imports` en `eslint.config.ts`:
+  `components/ui/` no puede importar `@/api/pokeApi` ni `@/stores/*`. **E3 → `[x]`**.
+- **[ADR-0006](./decisions/ADR-0006-arquitectura-por-capas.md)** — arquitectura por
+  capas, con lo descartado y qué se tomó de clean architecture.
+- **`useClipboard`** con Clipboard API, fallback y feedback. 8 tests. **F6 → `[~]`**:
+  falta el botón, que sí depende del Figma.
+- ADR-0004 pasa de `Propuesta` a `Aceptada`: ya está implementada y medida.
+- **89 tests pasando.**
+
+**Decisiones menores:**
+- **`@/api/types` queda permitido en `components/ui/`.** Tipar una prop con el modelo
+  de dominio no acopla el componente a la red; lo que se prohíbe es depender del
+  **cliente** y del **estado**.
+- **El ADR de arquitectura es el 0006 y no el 0005.** El 0005 estaba reservado desde
+  hace días para el layout desktop, y ya lo referenciaban `ui/README.md`, `ListView` y
+  `DetailView`. Renumerar habría roto esos enlaces.
+- **`document.execCommand` deprecado, usado igual.** Es el único camino sin HTTPS y
+  sigue soportado en todos los navegadores: el caso de uso que justifica una API
+  deprecada es justamente que la alternativa moderna no existe ahí.
+- **El fallback cubre dos casos, no uno.** No solo "no hay Clipboard API" sino también
+  "el usuario negó el permiso", que devuelve una promesa rechazada con la API presente.
+
+**Aprendido / fricción:**
+- **ESLint interpreta los patrones de `no-restricted-imports` con semántica de
+  `.gitignore`.** El primer intento usaba `'@/api'` y bloqueaba también `@/api/types`,
+  porque el patrón matchea todo lo que cuelga del prefijo. Se apuntó a `api/pokeApi`
+  en vez de a `api/` entero.
+- **La regla se verificó creando archivos que la violan a propósito**, con alias y con
+  ruta relativa, confirmando que falla, y borrándolos después. Una regla de lint que
+  nadie probó es indistinguible de una que no funciona.
+
+**Siguiente:** fase 0 — el Figma. Es lo único que queda bloqueando F5, F6, D1, D2 y E2.
