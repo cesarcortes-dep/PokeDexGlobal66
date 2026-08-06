@@ -32,7 +32,10 @@ defineProps<{ name: string }>()
   display: flex;
   align-items: center;
   height: var(--row-height);
-  padding: 0 var(--sp-4);
+  // El padding derecho es más grande porque quien la usa puede superponer una
+  // acción sobre ese lado (la estrella de favorito). Así el nombre trunca antes
+  // de meterse debajo.
+  padding: 0 var(--sp-8) 0 var(--sp-4);
   background-color: var(--c-surface);
   border-bottom: 1px solid var(--c-border);
 

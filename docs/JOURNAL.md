@@ -499,3 +499,61 @@ no dispara ninguna. **F4 → `[x]`**.
 
 **Siguiente:** favoritos (F1, F7). Es el último bloque funcional que no depende del
 Figma.
+
+---
+
+## 2026-08-06 — Favoritos (F1, F7)
+
+**Contexto:** último bloque funcional que no depende del Figma. Después de esto, todo
+lo que queda necesita el diseño.
+
+**Hecho:**
+- `favorites` store implementado: `Set` de nombres, `isFavorite` O(1), `toggle`.
+- `components/ui/FavoriteStar.vue` — `<button>` con `aria-pressed`.
+- `ListView`: estrella por fila, pestañas Todos/Favoritos, estado vacío propio.
+- `DetailView`: la misma estrella, sobre el mismo store.
+- Tests: 6 del store + 6 en `ListView` + 3 en `DetailView`. **81 pasando**.
+- **F7 → `[x]`**, **F1 → `[~]`** hasta probarlo en navegador.
+
+**Decisiones menores:**
+- **La estrella es HERMANA del link, no está adentro.** Un `<button>` dentro de un
+  `<a>` es HTML inválido y rompe la navegación por teclado: el foco no sabe a cuál de
+  los dos ir. Se resolvió con la fila en `position: relative` y la estrella
+  posicionada encima. Fue lo único de esta tanda que obligó a cambiar markup ya
+  escrito.
+- **`<button>` con `aria-pressed`, no un ícono con `@click`.** Entra en el orden de
+  tabulación, responde a Enter y Espacio, y se anuncia como "activado"/"desactivado"
+  en vez de leer el carácter de la estrella.
+- **El filtro de favoritos va después de la búsqueda**, no antes: así buscar dentro de
+  favoritos funciona. La cadena queda lista → búsqueda → favoritos → virtual scroll.
+- **Dos estados vacíos distintos.** Si la lista está vacía porque nunca marcaste nada,
+  decir "no encontramos ningún Pokémon con ese nombre" sería mentir. "Todavía no
+  marcaste ninguno" se evalúa primero.
+- **Dos botones con `aria-pressed` en vez de un checkbox** para Todos/Favoritos: son
+  dos vistas excluyentes del mismo listado.
+
+**Aprendido / fricción:**
+- **La consistencia entre vistas que pide F1 no necesitó código.** Marcar en el detalle
+  se ve en el listado porque hay un solo store, no porque haya un mecanismo de
+  sincronización. Es el pago directo de la decisión de arquitectura: el test lo afirma
+  montando el detalle y consultando el store, sin tocar la lista.
+- **`Set` reactivo: `add` y `delete` alcanzan.** Vue 3 trackea las mutaciones de
+  colecciones, así que no hace falta reasignar. Es lo contrario del caché de detalle
+  del store `pokemon`, que sí necesita reasignarse porque vive en un `shallowRef`. Dos
+  estructuras parecidas con reglas de reactividad opuestas, y el motivo es la decisión
+  de performance de cada una.
+
+**Verificado en navegador (mismo día):** el favorito marcado en la lista aparece
+marcado al entrar al detalle, sigue marcado al volver, y sobrevive a navegar por el
+detalle de otros Pokémon. **F1 → `[x]`**.
+
+Surgió la pregunta esperable: **al recargar la página el favorito se pierde**. Es el
+supuesto S2 funcionando como se decidió, no un bug. El enunciado pide persistir *"en el
+store de vue"* y aclara que no hace falta base de datos; el store vive en memoria. Se
+decidió **no** agregar `localStorage`: sumaría código que el enunciado no pide y haría
+perder la oportunidad de mostrar que el requisito se leyó con precisión. Queda
+documentado en ADR-0003, en el supuesto S2 y en el README para que no se lea como
+olvido.
+
+**Siguiente:** todo lo que queda depende del Figma — F5 (loader), F6 (compartir),
+D1 y D2 (maqueta y desktop). Fase 0 pasa a ser el bloqueante real del proyecto.

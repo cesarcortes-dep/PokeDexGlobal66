@@ -57,6 +57,15 @@ function mountView() {
   })
 }
 
+/** Escribe en el input y deja pasar la ventana de debounce. */
+async function search(wrapper: ReturnType<typeof mountView>, text: string) {
+  vi.useFakeTimers()
+  await wrapper.find('input[type="search"]').setValue(text)
+  vi.advanceTimersByTime(DEBOUNCE_MS)
+  vi.useRealTimers()
+  await flushPromises()
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   fetchPokemonListMock.mockReset()
@@ -115,15 +124,6 @@ describe('ListView', () => {
   })
 
   describe('búsqueda (F8)', () => {
-    /** Escribe en el input y deja pasar la ventana de debounce. */
-    async function search(wrapper: ReturnType<typeof mountView>, text: string) {
-      vi.useFakeTimers()
-      await wrapper.find('input[type="search"]').setValue(text)
-      vi.advanceTimersByTime(DEBOUNCE_MS)
-      vi.useRealTimers()
-      await flushPromises()
-    }
-
     it('filtra la lista sin pedir nada a la red', async () => {
       const wrapper = mountView()
       await flushPromises()
@@ -170,6 +170,85 @@ describe('ListView', () => {
 
       expect(viewport.scrollTop).toBe(0)
       expect(wrapper.find('.pokemon-row').text()).toBe('pokemon-1')
+    })
+  })
+
+  describe('favoritos (F1)', () => {
+    /** Marca como favorito el enésimo Pokémon visible. */
+    async function star(wrapper: ReturnType<typeof mountView>, index = 0) {
+      await wrapper.findAll('.favorite-star')[index]!.trigger('click')
+    }
+
+    async function showFavorites(wrapper: ReturnType<typeof mountView>) {
+      await wrapper.findAll('.list-view__tab')[1]!.trigger('click')
+    }
+
+    it('cada fila ofrece marcar favorito', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      expect(wrapper.find('.favorite-star').attributes('aria-pressed')).toBe('false')
+
+      await star(wrapper)
+
+      expect(wrapper.find('.favorite-star').attributes('aria-pressed')).toBe('true')
+    })
+
+    it('la pestaña Favoritos filtra a lo marcado', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      await star(wrapper, 0)
+      await star(wrapper, 2)
+      await showFavorites(wrapper)
+
+      const rows = wrapper.findAll('.pokemon-row')
+      expect(rows).toHaveLength(2)
+      expect(rows.map((r) => r.text())).toEqual(['pokemon-0', 'pokemon-2'])
+    })
+
+    it('sin favoritos muestra un mensaje propio, no "no encontramos"', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      await showFavorites(wrapper)
+
+      expect(wrapper.text()).toContain('Todavía no marcaste')
+      expect(wrapper.text()).not.toContain('No encontramos')
+    })
+
+    it('desmarcar saca al Pokémon de la vista de favoritos', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      await star(wrapper, 0)
+      await showFavorites(wrapper)
+      expect(wrapper.findAll('.pokemon-row')).toHaveLength(1)
+
+      await star(wrapper, 0)
+
+      expect(wrapper.findAll('.pokemon-row')).toHaveLength(0)
+    })
+
+    it('se puede buscar dentro de favoritos', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      await star(wrapper, 0) // pokemon-0
+      await star(wrapper, 1) // pokemon-1
+      await showFavorites(wrapper)
+      await search(wrapper, 'pokemon-1')
+
+      expect(wrapper.findAll('.pokemon-row').map((r) => r.text())).toEqual(['pokemon-1'])
+    })
+
+    it('marcar favorito no dispara ninguna request', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      await star(wrapper)
+
+      expect(fetchPokemonListMock).toHaveBeenCalledTimes(1)
     })
   })
 

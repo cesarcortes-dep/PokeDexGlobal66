@@ -11,19 +11,27 @@
  * gratis. Si termina siendo modal, se mueve a components/features/.
  *
  * TODO:
- *  - botón favorito (F1) y botón compartir con useClipboard (F6)
+ *  - botón compartir con useClipboard (F6)
  *  - maqueta real del Figma
  */
 
 import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { usePokemonStore } from '@/stores/pokemon'
+import { useFavoritesStore } from '@/stores/favorites'
 import { PokeApiError } from '@/api/pokeApi'
+import FavoriteStar from '@/components/ui/FavoriteStar.vue'
 import type { Pokemon } from '@/api/types'
 
 const props = defineProps<{ name: string }>()
 
 const store = usePokemonStore()
+
+/**
+ * El mismo store que usa el listado. Marcar acá se refleja allá sin ningún
+ * mecanismo de sincronización: hay una sola fuente de verdad (F1, F7).
+ */
+const favorites = useFavoritesStore()
 
 const pokemon = ref<Pokemon | null>(null)
 const isLoading = ref(false)
@@ -77,7 +85,14 @@ watch(
         height="240"
       />
 
-      <h1 class="detail-view__name">{{ pokemon.name }}</h1>
+      <div class="detail-view__heading">
+        <h1 class="detail-view__name">{{ pokemon.name }}</h1>
+        <FavoriteStar
+          :active="favorites.isFavorite(pokemon.name)"
+          :label="pokemon.name"
+          @toggle="favorites.toggle(pokemon.name)"
+        />
+      </div>
 
       <!-- Lista de descripción: cada atributo es un par nombre/valor, y eso es
            exactamente lo que un <dl> comunica a un lector de pantalla. -->
@@ -125,6 +140,13 @@ watch(
   &__image {
     width: 240px;
     height: auto;
+  }
+
+  &__heading {
+    display: flex;
+    gap: var(--sp-2);
+    align-items: center;
+    justify-content: center;
   }
 
   &__name {

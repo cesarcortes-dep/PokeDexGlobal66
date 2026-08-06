@@ -13,6 +13,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import DetailView from '../DetailView.vue'
 import ListView from '../ListView.vue'
 import { PokeApiError } from '@/api/pokeApi'
+import { useFavoritesStore } from '@/stores/favorites'
 
 const { fetchPokemonListMock, fetchPokemonByNameMock } = vi.hoisted(() => ({
   fetchPokemonListMock: vi.fn(),
@@ -136,5 +137,34 @@ describe('DetailView', () => {
     const { wrapper } = await mountDetail()
 
     expect(wrapper.find('a').attributes('href')).toBe('/')
+  })
+
+  describe('favoritos (F1)', () => {
+    it('permite marcar desde el detalle', async () => {
+      const { wrapper } = await mountDetail()
+
+      expect(wrapper.find('.favorite-star').attributes('aria-pressed')).toBe('false')
+
+      await wrapper.find('.favorite-star').trigger('click')
+
+      expect(wrapper.find('.favorite-star').attributes('aria-pressed')).toBe('true')
+    })
+
+    it('lo marcado en el detalle lo ve el store compartido', async () => {
+      const { wrapper } = await mountDetail('pikachu')
+
+      await wrapper.find('.favorite-star').trigger('click')
+
+      // Sin ningún mecanismo de sincronización: hay una sola fuente de verdad.
+      expect(useFavoritesStore().isFavorite('pikachu')).toBe(true)
+    })
+
+    it('refleja lo que ya estaba marcado en el listado', async () => {
+      useFavoritesStore().toggle('pikachu')
+
+      const { wrapper } = await mountDetail('pikachu')
+
+      expect(wrapper.find('.favorite-star').attributes('aria-pressed')).toBe('true')
+    })
   })
 })

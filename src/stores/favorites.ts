@@ -17,18 +17,18 @@ export const useFavoritesStore = defineStore('favorites', () => {
 
   const count = computed(() => names.value.size)
 
-  /** TODO: devolver true si el nombre está en el Set. */
   function isFavorite(name: string): boolean {
-    throw new Error(`TODO: implementar isFavorite("${name}")`)
+    return names.value.has(name)
   }
 
   /**
-   * TODO: agregar o quitar.
-   * OJO con la reactividad: Vue 3 sí trackea Set, pero si reasignás
-   * (`names.value = new Set(...)`) asegurate de que sea consistente en toda la app.
+   * Vue 3 sí trackea las mutaciones de un `Set` reactivo, así que `add` y
+   * `delete` alcanzan: no hace falta reasignar. Es lo contrario del caché de
+   * detalle del store `pokemon`, que sí necesita reasignarse porque vive en un
+   * `shallowRef`.
    */
   function toggle(name: string): void {
-    throw new Error(`TODO: implementar toggle("${name}")`)
+    if (!names.value.delete(name)) names.value.add(name)
   }
 
   return { names, count, isFavorite, toggle }
