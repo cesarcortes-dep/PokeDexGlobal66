@@ -9,8 +9,14 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { PokeApiError, extractIdFromUrl, fetchPokemonList } from '../pokeApi'
-import type { PokemonListResponse } from '../types'
+import {
+  PokeApiError,
+  extractIdFromUrl,
+  fetchPokemonByName,
+  fetchPokemonList,
+  toPokemon,
+} from '../pokeApi'
+import type { PokemonDetailResponse, PokemonListResponse } from '../types'
 
 /** Respuesta de listado mínima, con el `count` coherente con los `results`. */
 function listResponse(names: string[], count = names.length): PokemonListResponse {
@@ -116,14 +122,105 @@ describe('fetchPokemonList', () => {
   })
 })
 
+/** Respuesta de detalle recortada a lo que la app usa. */
+function detailResponse(overrides: Partial<PokemonDetailResponse> = {}): PokemonDetailResponse {
+  return {
+    id: 25,
+    name: 'pikachu',
+    weight: 60, // hectogramos → 6 kg
+    height: 4, // decímetros → 0.4 m
+    types: [{ slot: 1, type: { name: 'electric' } }],
+    sprites: {
+      other: { 'official-artwork': { front_default: 'https://img/artwork.png' } },
+      front_default: 'https://img/sprite.png',
+    },
+    ...overrides,
+  }
+}
+
 describe('toPokemon', () => {
-  it.todo('convierte hectogramos a kilogramos')
-  it.todo('convierte decímetros a metros')
-  it.todo('aplana types a un array de strings')
-  it.todo('cae al sprite por defecto si no hay official-artwork')
+  it('convierte hectogramos a kilogramos', () => {
+    expect(toPokemon(detailResponse({ weight: 60 })).weight).toBe(6)
+  })
+
+  it('convierte decímetros a metros', () => {
+    expect(toPokemon(detailResponse({ height: 4 })).height).toBe(0.4)
+  })
+
+  it('aplana types a un array de strings', () => {
+    const raw = detailResponse({
+      types: [
+        { slot: 1, type: { name: 'grass' } },
+        { slot: 2, type: { name: 'poison' } },
+      ],
+    })
+
+    expect(toPokemon(raw).types).toEqual(['grass', 'poison'])
+  })
+
+  it('ordena los types por slot y no por posición en el array', () => {
+    const raw = detailResponse({
+      types: [
+        { slot: 2, type: { name: 'poison' } },
+        { slot: 1, type: { name: 'grass' } },
+      ],
+    })
+
+    expect(toPokemon(raw).types).toEqual(['grass', 'poison'])
+  })
+
+  it('prefiere el artwork oficial', () => {
+    expect(toPokemon(detailResponse()).imageUrl).toBe('https://img/artwork.png')
+  })
+
+  it('cae al sprite por defecto si no hay official-artwork', () => {
+    const raw = detailResponse({ sprites: { front_default: 'https://img/sprite.png' } })
+
+    expect(toPokemon(raw).imageUrl).toBe('https://img/sprite.png')
+  })
+
+  it('devuelve null si no hay ninguna imagen', () => {
+    const raw = detailResponse({ sprites: { front_default: null } })
+
+    expect(toPokemon(raw).imageUrl).toBeNull()
+  })
 })
 
 describe('fetchPokemonByName', () => {
-  it.todo('devuelve el modelo de dominio, no la respuesta cruda')
-  it.todo('propaga un 404 como PokeApiError con status 404')
+  it('devuelve el modelo de dominio, no la respuesta cruda', async () => {
+    mockFetchOk(detailResponse())
+
+    const pokemon = await fetchPokemonByName('pikachu')
+
+    // Las unidades ya convertidas y sin rastro de la forma de la API.
+    expect(pokemon).toEqual({
+      id: 25,
+      name: 'pikachu',
+      height: 0.4,
+      weight: 6,
+      types: ['electric'],
+      imageUrl: 'https://img/artwork.png',
+    })
+    expect(pokemon).not.toHaveProperty('sprites')
+  })
+
+  it('propaga un 404 como PokeApiError con status 404', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({}) }),
+    )
+
+    await expect(fetchPokemonByName('missingno')).rejects.toMatchObject({
+      name: 'PokeApiError',
+      status: 404,
+    })
+  })
+
+  it('escapa el nombre en la url', async () => {
+    const fetchMock = mockFetchOk(detailResponse())
+
+    await fetchPokemonByName('mr mime')
+
+    expect(urlOfCall(fetchMock, 0).pathname).toContain('mr%20mime')
+  })
 })

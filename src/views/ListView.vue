@@ -12,6 +12,7 @@
  */
 
 import { watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { usePokemonStore } from '@/stores/pokemon'
 import { useSearch } from '@/composables/useSearch'
@@ -97,11 +98,21 @@ store.loadList()
       <div v-else class="list-view__sizer" :style="{ height: `${totalHeight}px` }">
         <ul class="list-view__window" :style="{ transform: `translateY(${offsetY}px)` }">
           <li v-for="{ item, index } in visibleItems" :key="item.name">
-            <PokemonRow
-              :name="item.name"
-              :aria-posinset="index + 1"
-              :aria-setsize="results.length"
-            />
+            <!--
+              El link envuelve la fila en vez de vivir adentro de PokemonRow: así
+              la fila sigue sin saber que existe el router y se puede reusar en
+              un contexto sin navegación (F1, la lista de favoritos).
+            -->
+            <RouterLink
+              class="list-view__link"
+              :to="{ name: 'detail', params: { name: item.name } }"
+            >
+              <PokemonRow
+                :name="item.name"
+                :aria-posinset="index + 1"
+                :aria-setsize="results.length"
+              />
+            </RouterLink>
           </li>
         </ul>
       </div>
@@ -153,6 +164,16 @@ store.loadList()
     padding: 0;
     margin: 0;
     list-style: none;
+  }
+
+  &__link {
+    color: inherit;
+    text-decoration: none;
+
+    &:focus-visible {
+      outline: 2px solid var(--c-primary);
+      outline-offset: -2px;
+    }
   }
 
   &__status {

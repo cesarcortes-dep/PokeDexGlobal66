@@ -83,7 +83,8 @@ export async function fetchPokemonList(): Promise<PokemonListItem[]> {
 
 /** Detalle de un Pokémon. Se llama solo al abrirlo, nunca en bucle sobre la lista. */
 export async function fetchPokemonByName(name: string): Promise<Pokemon> {
-  throw new PokeApiError(`TODO: implementar fetchPokemonByName("${name}")`)
+  const raw = await request<PokemonDetailResponse>(`/pokemon/${encodeURIComponent(name)}`)
+  return toPokemon(raw)
 }
 
 /**
@@ -93,7 +94,20 @@ export async function fetchPokemonByName(name: string): Promise<Pokemon> {
  * y es donde viven las conversiones (hectogramos→kg, decímetros→m).
  */
 export function toPokemon(raw: PokemonDetailResponse): Pokemon {
-  throw new Error(`TODO: implementar toPokemon() para "${raw.name}"`)
+  return {
+    id: raw.id,
+    name: raw.name,
+    // La API devuelve decímetros y hectogramos. Nadie dice que un Pokémon mide
+    // 7 decímetros, así que la conversión vive acá y la UI recibe m y kg.
+    height: raw.height / 10,
+    weight: raw.weight / 10,
+    // `slot` es el orden oficial (tipo primario, secundario). El array puede venir
+    // en cualquier orden, así que se ordena en vez de confiar en la posición.
+    types: [...raw.types].sort((a, b) => a.slot - b.slot).map((entry) => entry.type.name),
+    // El artwork oficial es el grande del Figma; `front_default` es el sprite
+    // chico de 96px. Se cae al segundo porque no todas las formas tienen artwork.
+    imageUrl: raw.sprites.other?.['official-artwork']?.front_default ?? raw.sprites.front_default,
+  }
 }
 
 /** Extrae el id de la url del listado, sin gastar una request. Ej: ".../pokemon/25/" → 25 */

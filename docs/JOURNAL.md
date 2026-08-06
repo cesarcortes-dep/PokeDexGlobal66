@@ -404,3 +404,48 @@ un `EmptyState.vue` con su ilustración y su botón.
 
 **Siguiente:** probar la búsqueda en el navegador para cerrar F8. Después, el detalle
 (F4), que llena los 6 `it.todo` que siguen esperando.
+
+---
+
+## 2026-08-06 — Detalle bajo demanda y cacheado (F4)
+
+**Contexto:** el segundo de los dos llamados permitidos. Los 6 `it.todo` del cliente
+de API venían esperando desde el andamio: era el momento de cobrarlos.
+
+**Hecho:**
+- `toPokemon()` — conversiones de unidad y aplanado de tipos.
+- `fetchPokemonByName()` — detalle con el nombre escapado en la URL.
+- `pokemonStore.getDetail()` — caché por nombre y deduplicación de requests.
+- `DetailView` conectada: carga, 404, error de red, y vuelta al listado.
+- Navegación desde el listado con `RouterLink` envolviendo la fila.
+- **67 tests pasando y cero `it.todo`**: se cerraron los 6 que quedaban.
+- **F4 → `[~]`**, a la espera de verlo en Network.
+
+**Decisiones menores:**
+- **El `RouterLink` envuelve `PokemonRow`, no vive adentro.** Así la fila sigue sin
+  saber que existe el router y se puede reusar en un contexto sin navegación — que es
+  exactamente lo que va a pedir la lista de favoritos de F1.
+- **Los tipos se ordenan por `slot`, no por posición en el array.** La API trae el
+  orden oficial en ese campo; confiar en la posición funciona hasta el día que no.
+- **El caché de detalle se reasigna, no se muta.** `detailCache` es un `shallowRef`
+  —a propósito, para no volver reactivo cada campo de cada Pokémon— y eso implica que
+  mutar el `Map` no notifica a nadie. Es el precio de la decisión, y va explicado en
+  el código para que no parezca un descuido.
+- **Traducir el 404 a "no existe" vive en la view, no en el store.** Elegir la copy
+  según el status es decisión de presentación: en esta pantalla un 404 significa
+  "escribiste mal la URL", no "se rompió algo".
+- **Un fallo no se cachea y no bloquea el nombre.** Se puede reintentar; hay test.
+
+**Aprendido / fricción:**
+- **Agregar el `RouterLink` rompió 8 tests de `ListView` de una.** No es ruido: es la
+  señal de que el árbol de componentes ahora depende del router. Se resolvió montando
+  un router real en vez de stubear `RouterLink` — con un stub, el test no probaría que
+  el `to` está bien armado, que es justo lo que puede romperse.
+- **Verificado contra la API real**, no solo contra mocks: `bulbasaur` vuelve con
+  `["grass", "poison"]` en orden de slot, las unidades ya convertidas (0.7 m, 6.9 kg),
+  el artwork oficial resuelto, y un nombre inexistente llega como `PokeApiError` con
+  `status: 404`. Los mocks prueban que el código hace lo que digo; esto prueba que el
+  contrato es el que asumo.
+
+**Siguiente:** verificar F4 en Network —abrir un Pokémon, volver, reabrirlo y confirmar
+que la segunda vez no hay request—. Después F1 y F7, favoritos.

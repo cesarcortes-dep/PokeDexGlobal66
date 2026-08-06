@@ -7,7 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
-import { PokeApiError, fetchPokemonList } from '@/api/pokeApi'
+import { PokeApiError, fetchPokemonByName, fetchPokemonList } from '@/api/pokeApi'
 import type { Pokemon, PokemonListItem } from '@/api/types'
 
 export const usePokemonStore = defineStore('pokemon', () => {
@@ -64,11 +64,37 @@ export const usePokemonStore = defineStore('pokemon', () => {
   }
 
   /**
-   * TODO: devolver del caché si existe; si no, pedir el detalle y cachearlo.
-   * Reabrir un Pokémon ya visto NO debe disparar request (F4).
+   * Requests de detalle en curso, una por nombre. Mismo motivo que `inFlight` en
+   * `loadList`: abrir dos veces rápido el mismo Pokémon dispararía dos requests.
+   * Acá hace falta un Map porque puede haber varios detalles distintos en vuelo.
+   */
+  const pendingDetails = new Map<string, Promise<Pokemon>>()
+
+  /**
+   * Detalle bajo demanda, cacheado por nombre (F4).
+   *
+   * Reabrir un Pokémon ya visto no toca la red. Es la mitad del "solo dos
+   * llamados": el listado se pide una vez, y el detalle una vez por Pokémon.
    */
   async function getDetail(name: string): Promise<Pokemon> {
-    throw new Error(`TODO: implementar getDetail("${name}")`)
+    const cached = detailCache.value.get(name)
+    if (cached) return cached
+
+    const pending = pendingDetails.get(name)
+    if (pending) return pending
+
+    const request = fetchPokemonByName(name)
+      .then((pokemon) => {
+        // `shallowRef` no trackea mutaciones del Map: hay que reasignarlo para
+        // que quien lo observe se entere. Es el precio de no hacer reactivo cada
+        // campo de cada Pokémon, que es lo que se quiere evitar acá.
+        detailCache.value = new Map(detailCache.value).set(name, pokemon)
+        return pokemon
+      })
+      .finally(() => pendingDetails.delete(name))
+
+    pendingDetails.set(name, request)
+    return request
   }
 
   return { list, detailCache, isLoadingList, error, isLoaded, loadList, getDetail }

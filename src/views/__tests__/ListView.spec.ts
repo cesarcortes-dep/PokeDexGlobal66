@@ -12,6 +12,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createRouter, createWebHistory } from 'vue-router'
 import ListView from '../ListView.vue'
 import { PokeApiError } from '@/api/pokeApi'
 
@@ -35,8 +36,25 @@ function makeList(n: number) {
   }))
 }
 
+/**
+ * Router real y no un stub de `RouterLink`: la fila navega al detalle, y con un
+ * stub el test no probaría que el `to` está bien armado.
+ */
+function makeRouter() {
+  return createRouter({
+    history: createWebHistory(),
+    routes: [
+      { path: '/', name: 'list', component: ListView },
+      { path: '/pokemon/:name', name: 'detail', component: { template: '<div />' } },
+    ],
+  })
+}
+
 function mountView() {
-  return mount(ListView, { attachTo: document.body })
+  return mount(ListView, {
+    attachTo: document.body,
+    global: { plugins: [makeRouter()] },
+  })
 }
 
 beforeEach(() => {
@@ -87,6 +105,13 @@ describe('ListView', () => {
     await flushPromises()
 
     expect(wrapper.find('.pokemon-row').attributes('aria-setsize')).toBe(String(TOTAL_POKEMON))
+  })
+
+  it('cada fila enlaza al detalle de ese Pokémon (F4)', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.find('a').attributes('href')).toBe('/pokemon/pokemon-0')
   })
 
   describe('búsqueda (F8)', () => {

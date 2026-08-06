@@ -11,12 +11,25 @@ import { createPinia, setActivePinia } from 'pinia'
 import { usePokemonStore } from '../pokemon'
 import { PokeApiError } from '@/api/pokeApi'
 
-const { fetchPokemonListMock } = vi.hoisted(() => ({ fetchPokemonListMock: vi.fn() }))
+const { fetchPokemonListMock, fetchPokemonByNameMock } = vi.hoisted(() => ({
+  fetchPokemonListMock: vi.fn(),
+  fetchPokemonByNameMock: vi.fn(),
+}))
 
 vi.mock('@/api/pokeApi', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/api/pokeApi')>()),
   fetchPokemonList: fetchPokemonListMock,
+  fetchPokemonByName: fetchPokemonByNameMock,
 }))
+
+const PIKACHU = {
+  id: 25,
+  name: 'pikachu',
+  height: 0.4,
+  weight: 6,
+  types: ['electric'],
+  imageUrl: 'https://img/artwork.png',
+}
 
 const ITEMS = [
   { name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' },
@@ -27,6 +40,8 @@ beforeEach(() => {
   setActivePinia(createPinia())
   fetchPokemonListMock.mockReset()
   fetchPokemonListMock.mockResolvedValue(ITEMS)
+  fetchPokemonByNameMock.mockReset()
+  fetchPokemonByNameMock.mockResolvedValue(PIKACHU)
 })
 
 describe('loadList', () => {
@@ -89,5 +104,53 @@ describe('loadList', () => {
     expect(fetchPokemonListMock).toHaveBeenCalledTimes(2)
     expect(store.list).toEqual(ITEMS)
     expect(store.error).toBeNull()
+  })
+})
+
+describe('getDetail', () => {
+  it('devuelve el modelo de dominio', async () => {
+    const store = usePokemonStore()
+
+    await expect(store.getDetail('pikachu')).resolves.toEqual(PIKACHU)
+  })
+
+  it('no vuelve a pedir un Pokémon ya visto (F4)', async () => {
+    const store = usePokemonStore()
+
+    await store.getDetail('pikachu')
+    await store.getDetail('pikachu')
+
+    expect(fetchPokemonByNameMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('abrir el mismo dos veces rápido dispara una sola request', async () => {
+    const store = usePokemonStore()
+
+    await Promise.all([store.getDetail('pikachu'), store.getDetail('pikachu')])
+
+    expect(fetchPokemonByNameMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('cachea por nombre, no globalmente', async () => {
+    const store = usePokemonStore()
+
+    await store.getDetail('pikachu')
+    fetchPokemonByNameMock.mockResolvedValueOnce({ ...PIKACHU, name: 'raichu' })
+    await store.getDetail('raichu')
+
+    expect(fetchPokemonByNameMock).toHaveBeenCalledTimes(2)
+    expect(store.detailCache.size).toBe(2)
+  })
+
+  it('propaga el error y no lo cachea', async () => {
+    fetchPokemonByNameMock.mockRejectedValueOnce(new PokeApiError('no existe', 404))
+    const store = usePokemonStore()
+
+    await expect(store.getDetail('missingno')).rejects.toThrow(PokeApiError)
+    expect(store.detailCache.size).toBe(0)
+
+    // Un fallo no debe dejar el nombre bloqueado: se puede reintentar.
+    await expect(store.getDetail('missingno')).resolves.toEqual(PIKACHU)
+    expect(fetchPokemonByNameMock).toHaveBeenCalledTimes(2)
   })
 })
