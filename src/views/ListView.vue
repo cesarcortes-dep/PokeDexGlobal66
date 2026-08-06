@@ -6,17 +6,18 @@
  * No maqueta detalles ni hace fetch — eso vive en components/ y en api/.
  *
  * TODO:
- *  - useSearch() sobre la lista del store (F8)
- *  - toggle Todos / Favoritos (F1)
- *  - estados vacíos: sin favoritos, búsqueda sin resultados
+ *  - toggle Todos / Favoritos (F1), con su estado vacío
  *  - PokeballLoader con animación CSS en lugar del texto de carga (F5)
  *  - navegación al detalle al click en una fila (F4)
  */
 
+import { watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePokemonStore } from '@/stores/pokemon'
+import { useSearch } from '@/composables/useSearch'
 import { useVirtualList } from '@/composables/useVirtualList'
 import PokemonRow from '@/components/ui/PokemonRow.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
 
 /**
  * Fuente única del alto de fila. Lo define TypeScript y el CSS lo recibe como
@@ -31,8 +32,24 @@ const ROW_HEIGHT = 60
 const store = usePokemonStore()
 const { list, isLoadingList, error } = storeToRefs(store)
 
-const { containerRef, visibleItems, totalHeight, offsetY } = useVirtualList(list, {
+/**
+ * La búsqueda se apoya en la lista del store, y el virtual scroll en el
+ * resultado de la búsqueda. Encadenados así, filtrar no dispara ninguna request:
+ * `results` es un `computed` sobre datos que ya están en memoria (F8, ADR-0004).
+ */
+const { query, results, isEmpty } = useSearch(list)
+
+const { containerRef, visibleItems, totalHeight, offsetY } = useVirtualList(results, {
   itemHeight: ROW_HEIGHT,
+})
+
+/**
+ * Volver arriba al cambiar el resultado. Sin esto, buscar con el scroll a la
+ * mitad deja al usuario mirando el final de una lista de tres — técnicamente
+ * correcto y desconcertante.
+ */
+watch(results, () => {
+  if (containerRef.value) containerRef.value.scrollTop = 0
 })
 
 /**
@@ -48,6 +65,13 @@ store.loadList()
   <main class="list-view" :style="{ '--row-height': `${ROW_HEIGHT}px` }">
     <h1 class="list-view__title">Pokédex</h1>
 
+    <SearchInput
+      v-model="query"
+      class="list-view__search"
+      label="Buscar Pokémon por nombre"
+      placeholder="Buscar"
+    />
+
     <!--
       El contenedor se renderiza siempre, también mientras carga: es el elemento
       que mide `useVirtualList`. Si viviera detrás de un v-else, no existiría al
@@ -61,6 +85,10 @@ store.loadList()
         <button type="button" @click="store.loadList()">Reintentar</button>
       </div>
 
+      <p v-else-if="isEmpty" class="list-view__status" role="status">
+        No encontramos ningún Pokémon con ese nombre.
+      </p>
+
       <!--
         El sizer tiene el alto de la lista COMPLETA aunque solo se pinte la
         ventana visible: es lo que le da a la scrollbar el tamaño y el recorrido
@@ -69,7 +97,11 @@ store.loadList()
       <div v-else class="list-view__sizer" :style="{ height: `${totalHeight}px` }">
         <ul class="list-view__window" :style="{ transform: `translateY(${offsetY}px)` }">
           <li v-for="{ item, index } in visibleItems" :key="item.name">
-            <PokemonRow :name="item.name" :aria-posinset="index + 1" :aria-setsize="list.length" />
+            <PokemonRow
+              :name="item.name"
+              :aria-posinset="index + 1"
+              :aria-setsize="results.length"
+            />
           </li>
         </ul>
       </div>
@@ -92,6 +124,10 @@ store.loadList()
 
   &__title {
     font-size: var(--fs-title);
+  }
+
+  &__search {
+    margin-bottom: var(--sp-4);
   }
 
   &__viewport {

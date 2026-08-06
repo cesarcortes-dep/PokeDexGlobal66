@@ -25,6 +25,8 @@ vi.mock('@/api/pokeApi', async (importOriginal) => ({
 /** El universo real medido contra la PokéAPI el 2026-08-05. */
 const TOTAL_POKEMON = 1351
 const VIEWPORT_HEIGHT = 600
+const ROW_HEIGHT = 60
+const DEBOUNCE_MS = 200
 
 function makeList(n: number) {
   return Array.from({ length: n }, (_, i) => ({
@@ -85,6 +87,65 @@ describe('ListView', () => {
     await flushPromises()
 
     expect(wrapper.find('.pokemon-row').attributes('aria-setsize')).toBe(String(TOTAL_POKEMON))
+  })
+
+  describe('búsqueda (F8)', () => {
+    /** Escribe en el input y deja pasar la ventana de debounce. */
+    async function search(wrapper: ReturnType<typeof mountView>, text: string) {
+      vi.useFakeTimers()
+      await wrapper.find('input[type="search"]').setValue(text)
+      vi.advanceTimersByTime(DEBOUNCE_MS)
+      vi.useRealTimers()
+      await flushPromises()
+    }
+
+    it('filtra la lista sin pedir nada a la red', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      // El último de la lista: cualquier otro nombre sería prefijo de varios
+      // (buscar "pokemon-42" matchea también 420…429, y está bien que así sea).
+      await search(wrapper, `pokemon-${TOTAL_POKEMON - 1}`)
+
+      expect(wrapper.findAll('.pokemon-row')).toHaveLength(1)
+      expect(wrapper.text()).toContain(`pokemon-${TOTAL_POKEMON - 1}`)
+      // Lo que sostiene F3: buscar no vuelve a la API.
+      expect(fetchPokemonListMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('muestra el estado vacío cuando no hay coincidencias', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      await search(wrapper, 'no-existe-este-pokemon')
+
+      expect(wrapper.findAll('.pokemon-row')).toHaveLength(0)
+      expect(wrapper.text()).toContain('No encontramos')
+    })
+
+    it('borrar la búsqueda devuelve el listado completo', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      await search(wrapper, `pokemon-${TOTAL_POKEMON - 1}`)
+      await search(wrapper, '')
+
+      expect(wrapper.find('.pokemon-row').attributes('aria-setsize')).toBe(String(TOTAL_POKEMON))
+    })
+
+    it('vuelve al principio de la lista al filtrar desde abajo', async () => {
+      const wrapper = mountView()
+      await flushPromises()
+
+      const viewport = wrapper.find('.list-view__viewport').element
+      viewport.scrollTop = 1300 * ROW_HEIGHT
+      await wrapper.find('.list-view__viewport').trigger('scroll')
+
+      await search(wrapper, 'pokemon-1')
+
+      expect(viewport.scrollTop).toBe(0)
+      expect(wrapper.find('.pokemon-row').text()).toBe('pokemon-1')
+    })
   })
 
   it('muestra el error y deja reintentar', async () => {

@@ -18,7 +18,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 | F5 | "pantalla de loading … efecto css sobre la imagen de la pokebola" | Loader con animación CSS (no GIF, no lib); visible en carga inicial | `[ ]` |
 | F6 | "El botón compartir debe copiar en el portapapeles el nombre del pokemon con sus atributos separados por coma" | Click copia string `nombre,attr,attr,…`; feedback visible al usuario; fallback si Clipboard API no disponible | `[ ]` |
 | F7 | "para la lista de favoritos … persistas la data en el store de vue" | Favoritos viven en store; sin backend ni DB | `[ ]` |
-| F8 | Búsqueda (implícita en el diseño Figma) | Filtro por nombre; estado vacío "sin resultados"; sin request por tecla | `[ ]` |
+| F8 | Búsqueda (implícita en el diseño Figma) | Filtro por nombre; estado vacío "sin resultados"; sin request por tecla | `[x]` **Verificado en navegador:** buscar filtra la lista, `zzz` muestra el estado vacío y **Network no registra ninguna llamada** al escribir — que es exactamente la prueba de "sin request por tecla". `useSearch` con debounce de 200 ms, índice normalizado precomputado, insensible a mayúsculas y acentos |
 
 ## Diseño
 
@@ -37,7 +37,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 | E4 | "Usar buenas prácticas … KISS, DRY, SOLID" | Sin duplicación de lógica de fetch/formateo; lint sin warnings; funciones con una responsabilidad | `[ ]` |
 | E5 | "Puntos extras si implementas unit test (no excluyente)" | Tests de store (favoritos), del cliente de API (mockeado) y de componentes clave; corren en CI | `[ ]` |
 | E6 | "escribe un resumen de las tecnologías que utilizaste en el readme" | README con stack, motivo de cada elección y enlace a los ADRs | `[ ]` |
-| E7 | "si bien la aplicación es sencilla igual buscamos que pienses en gran cantidad de data al momento de decidir cómo implementarás tu solución" | Lista renderiza ~1300 ítems sin caída de FPS al scrollear; búsqueda sin recalcular todo el árbol; medición documentada | `[~]` `useVirtualList` implementado. Test automatizado: con 1351 Pokémon cargados hay **<30 filas en el DOM**, y la cantidad no cambia con una lista de 100.000. **Falta medir FPS real en navegador** y la parte de búsqueda (F8) |
+| E7 | "si bien la aplicación es sencilla igual buscamos que pienses en gran cantidad de data al momento de decidir cómo implementarás tu solución" | Lista renderiza ~1300 ítems sin caída de FPS al scrollear; búsqueda sin recalcular todo el árbol; medición documentada | `[~]` **Render:** con 1351 Pokémon hay **<30 filas en el DOM**, y no cambia con una lista de 100.000 (test automatizado). **Búsqueda:** filtrar cuesta **0.108 ms** con índice precomputado vs **0.188 ms** normalizando dentro del `filter`; el índice se arma una vez en 0.36 ms. **Falta medir FPS real en navegador** |
 
 **E7 es el criterio que más discrimina.** Es el único que no se cumple por prolijidad
 sino por una decisión de arquitectura explícita → [ADR-0004](./decisions/ADR-0004-estrategia-de-datos-y-escala.md).

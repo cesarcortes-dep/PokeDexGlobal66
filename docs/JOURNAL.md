@@ -355,3 +355,52 @@ corriendo de verdad. Ningún test automatizado los cierra —jsdom no es un nave
 
 **Siguiente:** búsqueda (F8) sobre la lista del store, que es lo que falta para poder
 cerrar E7 completo.
+
+---
+
+## 2026-08-05 — Búsqueda en cliente (F8)
+
+**Contexto:** el requisito que completa E7. La búsqueda es en cliente por obligación,
+no por preferencia: PokéAPI no tiene búsqueda por texto parcial y el enunciado acota a
+dos endpoints (ADR-0004).
+
+**Hecho:**
+- `useSearch`: debounce de 200 ms, índice normalizado precomputado, filtro por
+  substring insensible a mayúsculas y acentos.
+- `components/ui/SearchInput.vue` — presentación pura, con label accesible oculto.
+- `ListView`: el virtual scroll pasa a operar sobre `results` en vez de sobre `list`,
+  más el estado vacío "no encontramos ningún Pokémon".
+- Tests: 10 de `useSearch` + 4 de búsqueda en `ListView`. **42 pasando**, 6 `todo`.
+- **F8 → `[x]`**, verificado en navegador: filtra, el estado vacío aparece con `zzz` y
+  **Network no registra nada** al escribir. Es un requisito que se prueba por ausencia
+  —lo contrario de F3, donde había que contar una llamada—, así que la evidencia es
+  una pestaña de Network vacía.
+- **E7** ya con los dos números medidos.
+
+**Decisiones menores:**
+- **La lista vuelve arriba al cambiar el resultado.** Buscar con el scroll a la mitad
+  dejaba al usuario mirando el final de una lista de tres: técnicamente correcto y
+  desconcertante.
+- **`isEmpty` distingue "no busqué todavía" de "busqué y no hay".** Cero resultados con
+  la query vacía es la lista completa, no un estado vacío.
+
+**Aprendido / fricción:**
+- **El índice precomputado casi no se nota, y hay que decirlo.** Medido sobre los 1351
+  reales: filtrar cuesta **0.108 ms** con índice contra **0.188 ms** normalizando
+  dentro del `filter`. Un ~43% menos de algo que ya era despreciable. El índice se
+  queda —cuesta 0.36 ms una sola vez y escala con el tamaño de la lista— pero **no es
+  lo que hace rápida la búsqueda**. Lo que sostiene E7 es el virtual scroll y no
+  volver a la red. Venderlo como la gran optimización sería exagerar un número que
+  cualquiera puede pedir.
+- **El debounce tampoco ahorra requests** —no hay ninguna— sino renders: sin él,
+  escribir "charizard" recorre la lista nueve veces y repinta otras nueve, ocho de
+  ellas invisibles para el usuario.
+- Un test falló esperando 1 resultado para "pokemon-42" y devolvió 11: también matchea
+  420…429. El test estaba mal, no el código — la búsqueda por substring es la correcta
+  para un buscador. Se cambió por un nombre que no es prefijo de ningún otro.
+
+**Pendiente conocido:** el estado vacío es texto plano. Cuando llegue el Figma sale a
+un `EmptyState.vue` con su ilustración y su botón.
+
+**Siguiente:** probar la búsqueda en el navegador para cerrar F8. Después, el detalle
+(F4), que llena los 6 `it.todo` que siguen esperando.
