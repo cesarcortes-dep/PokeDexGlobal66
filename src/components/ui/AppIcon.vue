@@ -14,16 +14,13 @@
  */
 
 const ICONS = {
-  /** Lupa del buscador. Trazo, no relleno. */
-  search: {
-    viewBox: '0 0 20 20',
-    stroke: true,
-    paths: [
-      'M9.16667 15.8333C12.8486 15.8333 15.8333 12.8486 15.8333 9.16667C15.8333 5.48477 12.8486 2.5 9.16667 2.5C5.48477 2.5 2.5 5.48477 2.5 9.16667C2.5 12.8486 5.48477 15.8333 9.16667 15.8333Z',
-      'M17.5001 17.4998L13.8751 13.8748',
-    ],
-  },
-  /** Flecha de volver del detalle. */
+  /**
+   * Flecha de volver del detalle.
+   *
+   * La lupa del Figma se descartó: la búsqueda filtra mientras se escribe, así
+   * que un botón de "buscar" no dispara nada que no haya pasado ya. Un control
+   * que no hace nada es peor que uno ausente.
+   */
   back: {
     viewBox: '0 0 10 17',
     stroke: false,
