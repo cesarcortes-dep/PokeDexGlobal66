@@ -13,7 +13,7 @@ opciones que descarté— vive en [`docs/decisions/`](./docs/decisions/).
 npm install
 npm run dev        # servidor de desarrollo
 npm run build      # type-check + build de producción
-npm run test:unit  # 67 tests
+npm run test:unit  # 115 tests
 npm run lint       # ESLint
 ```
 
@@ -47,8 +47,8 @@ dejaría carpetas de un archivo.
 
 ```
 src/
-  api/          pokeApi.ts, types.ts       ← única capa que hace fetch
-  stores/       pokemon.ts, favorites.ts   ← Pinia: fuente de verdad + reglas
+  api/          pokeApi.ts, types.ts               ← única capa que hace fetch
+  stores/       pokemon.ts, favorites.ts, types.ts ← Pinia: fuente de verdad + reglas
   composables/  useVirtualList, useSearch, useClipboard
   components/
     ui/         presentación pura
@@ -58,8 +58,10 @@ src/
 ```
 
 **La regla que la sostiene: las dependencias van en un solo sentido.**
-`views → stores → api`, nunca al revés. Y `components/ui/` no importa nada de `api/`
-ni de `stores/`.
+`views → stores → api`, nunca al revés. Y `components/ui/` no importa el cliente de
+API ni los stores — **lo hace cumplir el lint**, no un acuerdo: hay un
+`no-restricted-imports` que falla el build si alguien lo intenta, por alias o por ruta
+relativa. Ver [ADR-0006](./docs/decisions/ADR-0006-arquitectura-por-capas.md).
 
 Dónde vive cada cosa, para que "capas" no sea una palabra vacía:
 
@@ -127,8 +129,9 @@ negativos, que el detalle no se vuelva a pedir— y ninguno se resuelve maquetan
 pantalla linda sobre datos mal resueltos hay que rehacerla; una pantalla fea sobre
 datos bien resueltos solo hay que pintarla.
 
-La consecuencia visible: **lo que está construido tiene estilos mínimos, no la maqueta
-del Figma.** Eso es la fase pendiente, no un descuido.
+Ese orden se cumplió: los ocho requisitos funcionales se cerraron y se verificaron en
+el navegador **antes** de abrir el Figma. La maqueta vino después, con los datos ya
+resueltos y medidos.
 
 Con una enmienda, que también está documentada
 ([ADR-0002](./docs/decisions/ADR-0002-figma-desktop-primero-en-diseno.md)): el
@@ -136,6 +139,23 @@ enunciado pide adaptar un diseño mobile a desktop, y **esa** parte no es pulido
 una decisión de estructura, porque una lista full-width en mobile y dos paneles en
 desktop no son los mismos componentes. Así que la *decisión* de layout sube antes del
 código de UI, aunque la *implementación* visual siga yendo al final.
+
+## Dónde me aparté del Figma, y por qué
+
+El diseño llegó solo en mobile y con cuatro pantallas. Hay tres desviaciones, todas
+deliberadas:
+
+**Dos pestañas de navegación en vez de cuatro.** El Figma tiene Pokédex, Regiones,
+favoritos y Perfil. Regiones y perfil no están en el enunciado y no hay datos detrás:
+serían dos pestañas muertas, que se leen como app rota antes que como fidelidad.
+
+**Un botón de compartir que el Figma no incluye.** F6 lo exige y el diseño no lo
+contempla. Se construyó respetando el sistema visual existente.
+
+**El listado pinta el color y los tipos de cada Pokémon, y eso obligó a un endpoint
+más.** Es el conflicto más grande del proyecto y tiene su propio ADR: el diseño no se
+puede construir con los dos llamados que pide el enunciado. Ver
+[ADR-0007](./docs/decisions/ADR-0007-conflicto-figma-vs-dos-llamados.md).
 
 ## Decisiones que parecen omisiones y no lo son
 
@@ -150,7 +170,7 @@ listado exigiría 1351 requests. La imagen aparece en el detalle.
 
 ## Tests
 
-89 tests, corriendo en [CI](./.github/workflows/ci.yml) en cada push y cada pull
+115 tests, corriendo en [CI](./.github/workflows/ci.yml) en cada push y cada pull
 request: type-check, lint, tests y build. Ningún paso lleva `continue-on-error` — un
 check que no puede fallar no verifica nada.
 
@@ -166,16 +186,19 @@ si las capas existen de verdad.
 | `composables/__tests__/useClipboard.spec.ts` | Los dos caminos que se rompen en producción: sin HTTPS y con permiso denegado | `navigator.clipboard` |
 | `stores/__tests__/favorites.spec.ts` | Que se guardan nombres y no entidades | nada |
 | `views/__tests__/ListView.spec.ts` | Que las piezas juntas dan menos de 30 filas en el DOM con 1351 Pokémon | solo la red |
-| `views/__tests__/DetailView.spec.ts` | Que reabrir un Pokémon ya visto no dispara request | solo la red |
+| `views/__tests__/DetailView.spec.ts` | Que reabrir un Pokémon ya visto no dispara request, y qué copia el botón compartir | solo la red |
+| `stores/__tests__/types.spec.ts` | Que el tipo primario sea el del slot 1 aunque los 18 requests lleguen en cualquier orden | el cliente de API |
 
 ## Estado
 
 | Hecho | Pendiente |
 |---|---|
-| Listado completo virtualizado | Loader de pokebola con animación CSS (F5) |
-| Búsqueda en cliente | Botón compartir en el detalle (F6 — la lógica de copiado ya está) |
-| Detalle cacheado por nombre | Maqueta fiel al Figma y adaptación a desktop (D1, D2) |
-| Favoritos, con vista filtrada | |
+| Listado completo virtualizado, en grilla de 1/2/3 columnas | Loader de pokebola con animación CSS (F5) |
+| Búsqueda en cliente | Navegación por teclado sobre nodos reciclados |
+| Detalle cacheado, con peso, altura, habilidad y debilidades | |
+| Favoritos como ruta propia | |
+| Copiar atributos al portapapeles | |
+| Tokens, iconos y maqueta del Figma | |
 
 ## Documentación
 

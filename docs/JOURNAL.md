@@ -830,3 +830,53 @@ export real del Figma.
 
 **Siguiente:** la pantalla de detalle, con el botón de compartir (F6) que el Figma no
 contempla y hay que diseñar.
+
+---
+
+## 2026-08-07 — El detalle, y el Figma se termina
+
+**Contexto:** última pantalla. Con ella se cierran los ocho requisitos funcionales
+salvo el loader.
+
+**Hecho:**
+- Detalle maquetado: peso, altura, habilidad y debilidades, en dos columnas desde
+  1024 px. **F6 → `[x]`**, **D2 → `[x]`**, **E2 → `[x]`**, **D1 → `[!]`**.
+- `ability` entra al modelo de dominio.
+- Buscador y navegación comparten fila; favoritos como ruta propia.
+- Marco de Pokédex en el detalle, probado en una rama y mergeado.
+- **115 tests**, CI en verde.
+
+**Decisiones menores:**
+- **La flecha de volver respeta el origen vía query, no `router.back()`.** El historial
+  funciona si el usuario llegó navegando, pero si abre la URL del detalle directo
+  —que es justo lo que habilita tener ruta propia— `back()` lo sacaría de la
+  aplicación. El link pasa `?desde=favoritos` y siempre hay destino válido.
+- **El portapapeles copia lo que se ve, no lo crudo de la API.** Pasó de
+  `bulbasaur,6.9 kg,0.7 m,grass,poison` a `Bulbasaur,6.9 kg,0.7 m,Planta,Veneno`. El
+  requisito no dice en qué idioma, pero quien copia espera recibir lo que leyó.
+- **El experimento del marco se hizo en una rama.** El pedido fue explícito —"que
+  podamos revertir"— y una rama convierte eso en un comando en vez de deshacer
+  ediciones a mano.
+
+**Aprendido / fricción:**
+- **`node_modules` se corrompió a mitad de sesión.** Un `npm install` interrumpido dejó
+  96 paquetes de 427, sin `vue` ni `vue-tsc`. El error decía `EBUSY: resource busy or
+  locked` sobre `sass-embedded`, lo que apuntaba a un dev server abierto — pero no
+  había ningún proceso node corriendo. Era un bloqueo residual. Se resolvió borrando
+  la carpeta y reinstalando desde el lockfile.
+- **Un SVG inválido no lo detecta nada.** La primera versión del marco no se dibujaba
+  y ni el build ni el lint decían nada: el comentario de cabecera tenía dos guiones
+  seguidos —el nombre de una custom property— y los comentarios XML no los admiten. El
+  archivo quedaba malformado, el navegador se negaba a parsearlo, y con `alt=""` la
+  imagen rota no dejaba rastro visible. Se encontró validándolo como XML, después de
+  descartar el CSS.
+- **Un `<img>` de más rompió dos tests**, igual que antes con la barra de navegación:
+  `find('img')` empezó a traer el marco decorativo en vez del sprite. Segunda vez que
+  pasa lo mismo, y la lección se repite: los selectores de test van atados a la clase
+  del componente, no a la posición en el DOM.
+- **Anclar el detalle a una columna angosta fue el mismo error que en la lista.** Se
+  corrigió antes, pero la primera versión del detalle volvió a salir vertical y
+  centrada. La costumbre de maquetar mobile-first se cuela aunque la decisión esté
+  escrita.
+
+**Siguiente:** el loader (F5), que es lo único funcional que queda.
