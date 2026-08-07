@@ -1,12 +1,5 @@
-/**
- * Tests de `useSearch` (E5, F8).
- *
- * El debounce se prueba con timers falsos: esperar 200 ms de reloj real en cada
- * caso sería medio segundo de suite por nada, y además haría los tests flaky.
- *
- * Se monta un componente mínimo porque el composable usa `onBeforeUnmount` para
- * limpiar su timer, y eso necesita una instancia viva.
- */
+// Timers falsos: esperar el debounce real haría la suite lenta y flaky. Se monta
+// un componente mínimo porque el composable limpia su timer en `onBeforeUnmount`.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'

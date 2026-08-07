@@ -1,26 +1,9 @@
 <script setup lang="ts">
-/**
- * Iconos sueltos de la interfaz, exportados del Figma (E2).
- *
- * Están juntos en un componente porque son pocos y todos monocromos. Los de tipo
- * viven aparte (`typeIcons.ts`) porque son dieciocho y tienen su propia lógica de
- * etiqueta y color.
- *
- * Todos van con `currentColor`: el color lo decide quien los usa, así el mismo
- * icono sirve en un botón, en una barra de navegación o sobre un fondo de color.
- *
- * Siempre `aria-hidden`: un icono nunca es el nombre accesible de nada. El texto
- * lo pone el `aria-label` del botón que lo contiene.
- */
+// Iconos sueltos de la interfaz. Todos con `currentColor`, para que el color lo
+// decida quien los usa, y siempre `aria-hidden`: el nombre accesible lo pone el
+// botón que los contiene.
 
 const ICONS = {
-  /**
-   * Flecha de volver del detalle.
-   *
-   * La lupa del Figma se descartó: la búsqueda filtra mientras se escribe, así
-   * que un botón de "buscar" no dispara nada que no haya pasado ya. Un control
-   * que no hace nada es peor que uno ausente.
-   */
   back: {
     viewBox: '0 0 10 17',
     stroke: false,

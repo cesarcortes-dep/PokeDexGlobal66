@@ -1,15 +1,6 @@
 <script setup lang="ts">
-/**
- * Estado vacío (E2). Ilustración, título y una línea que dice qué hacer.
- *
- * Presentación pura: no sabe **por qué** está vacío. La lista tiene dos casos
- * distintos —búsqueda sin resultados y favoritos sin marcar— y decidir cuál
- * mostrar es de quien tiene los datos, no de este componente.
- *
- * La imagen va como `<img>` y no inline: es un PNG dentro de un SVG, así que no
- * hay nada que colorear por CSS y ponerlo inline solo engordaría el bundle con
- * base64 que el navegador ya sabe cachear como archivo.
- */
+// No sabe por qué está vacío: hay dos casos —búsqueda sin resultados y
+// favoritos sin marcar— y elegir cuál mostrar es de quien tiene los datos.
 
 import magikarp from '@/assets/magikarp.svg'
 
@@ -44,12 +35,11 @@ defineProps<{
     max-width: 185px;
     height: auto;
     margin-bottom: var(--sp-4);
-    // La ilustración acompaña al mensaje, no compite con él.
     opacity: 0.6;
   }
 
   &__title {
-    max-width: 22ch; // corta el título en dos líneas, como en el Figma
+    max-width: 22ch; // dos líneas, como en el Figma
     margin: 0;
     font-size: var(--fs-name);
     font-weight: var(--fw-name);

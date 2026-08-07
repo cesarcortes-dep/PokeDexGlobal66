@@ -1,8 +1,6 @@
-// Design tokens — extraídos del Figma (Dev Mode) el 2026-08-06.
-//
-// Los colores/espaciados van como custom properties para poder usarlos desde
-// cualquier <style scoped> sin importar nada. Los breakpoints van como variables
-// SCSS porque las media queries no aceptan var().
+// Design tokens del Figma. Colores y espaciados como custom properties, para
+// usarlos desde cualquier <style scoped>; los breakpoints como variables SCSS,
+// porque las media queries no aceptan var().
 
 @use 'sass:color';
 @use 'sass:map';
@@ -12,15 +10,10 @@ $bp-tablet: 768px;
 $bp-desktop: 1024px;
 $bp-wide: 1440px;
 
-// --- Paleta por tipo -------------------------------------------------------
+// No hay color primario: la identidad de la lista es el color del tipo.
 //
-// No hay un color primario: la identidad visual de la lista es el color del tipo
-// (README: el conflicto grande). Cada tarjeta se pinta según el tipo en `slot: 1`.
-//
-// OJO: `normal`, `dark` y `steel` comparten el mismo hex (#546E7A). Está
-// confirmado contra el Figma, no es una variable reusada por error: los tres se
-// ven igual a propósito. Si alguna vez hay que distinguirlos, se toca acá y las
-// tarjetas se recolorean solas.
+// `normal`, `dark` y `steel` comparten hex a propósito, confirmado contra el
+// Figma. No es una variable reusada por error.
 $type-colors: (
   'normal': #546e7a,
   'fighting': #e53935,
@@ -42,14 +35,8 @@ $type-colors: (
   'fairy': #e91e63,
 );
 
-/// Opacidad del fondo de la tarjeta.
-///
-/// El Figma lo define como `#RRGGBB80` para cada tipo — es decir, **el mismo color
-/// del chip al 50%**. No son 18 colores nuevos: es una regla. Guardarlos aparte
-/// daría 18 valores que hay que acordarse de cambiar cuando cambie el del chip.
-///
-/// Va como `rgba` y no como una mezcla con blanco a propósito: así compone sobre
-/// el fondo que tenga debajo en lugar de asumir que la página es clara.
+// El `#RRGGBB80` del Figma es el mismo color del chip al 50%: una regla, no 18
+// colores nuevos que haya que acordarse de mantener en sincronía.
 $type-card-alpha: 0.5;
 
 :root {
@@ -59,33 +46,29 @@ $type-card-alpha: 0.5;
   }
 
   // --- Color -------------------------------------------------------------
-  --c-bg: #fafafa; // página y fondo del input de búsqueda
+  --c-bg: #fafafa;
   --c-text: #121212;
   --c-text-muted: #424242;
   --c-border: #e0e0e0;
   --c-tab-active: #1565c0;
 
-  // Botón de favorito. Sale del SVG del Figma: el corazón va contorneado en
-  // #FAFAFA sobre un círculo gris translúcido, y se rellena de rojo al activarse.
+  // Botón de favorito: contorneado sobre un círculo gris, relleno al activarse.
   --c-favorite-active: #e53935;
   --c-favorite-outline: #fafafa;
   --c-favorite-circle: rgb(117 117 117 / 60%);
 
   // --- Tipografía --------------------------------------------------------
-  // Auto-hospedada con @fontsource, solo los pesos 400/500/600 que usa el Figma.
   --font-family: 'Poppins', system-ui, -apple-system, sans-serif;
 
-  // Título del detalle: Poppins Medium 26 / 100%, centrado.
+  // Título del detalle
   --fs-title: 1.625rem; // 26px
   --fw-title: 500;
   --lh-title: 1;
 
-  // Nombre del Pokémon en la lista: Poppins SemiBold 21 / 100%. Es un estilo
-  // distinto del título del detalle, no el mismo escalado.
+  // Nombre en la lista. Es un estilo propio, no el título escalado.
   --fs-name: 1.3125rem; // 21px
   --fw-name: 600;
 
-  // Secundario: Poppins Regular 14 / 150%.
   --fs-body: 0.875rem; // 14px
   --fw-body: 400;
   --lh-body: 1.5;
@@ -103,18 +86,10 @@ $type-card-alpha: 0.5;
   --radius-input: 16px;
   --radius-pill: 60px; // chips de tipo
   --border-width: 1.5px;
-  // Sin sombra en las tarjetas: el Figma no la usa.
 
   // --- Layout ------------------------------------------------------------
-  // OJO: `--row-height` NO se define acá. El alto de fila lo necesita
-  // useVirtualList para calcular offsets, así que la fuente única es la constante
-  // ROW_HEIGHT de ListView.vue, que lo inyecta como custom property. Definirlo
-  // también acá permitiría que CSS y cálculo se desincronicen en silencio.
-  //
-  // `--row-gap` tampoco: lo inyecta ListView junto con `--row-height`, porque el
-  // paso del virtual scroll es la suma de los dos.
-  // Ancho del contenido. Los 328px del Figma son la referencia mobile; el
-  // entregable es desktop (README: adaptación a desktop), y la grilla necesita espacio para que las
-  // tarjetas sean grandes de verdad.
+  // `--row-height` y `--row-gap` NO se definen acá: los inyecta ListView desde
+  // las constantes que también usa useVirtualList. Dos fuentes se
+  // desincronizarían en silencio.
   --content-max-width: 1400px;
 }

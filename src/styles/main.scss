@@ -23,7 +23,6 @@ button {
   cursor: pointer;
 }
 
-// Respetar a quien pidió menos movimiento. Aplica también al loader de F5.
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

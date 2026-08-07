@@ -1,10 +1,5 @@
-/**
- * Tests del store del catálogo (E5).
- *
- * Lo que se prueba acá no es "el store guarda cosas": es F3, el requisito de
- * que el listado se pida UNA sola vez en toda la sesión. El cliente de API se
- * mockea entero — el store no debe saber nada de la red.
- */
+// Lo que se prueba no es que el store guarde cosas, sino que el listado se pida
+// una sola vez en toda la sesión.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'

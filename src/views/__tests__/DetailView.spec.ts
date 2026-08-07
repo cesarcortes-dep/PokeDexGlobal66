@@ -1,10 +1,5 @@
-/**
- * Tests del detalle (E5, F4).
- *
- * Lo que sostiene F4 no es que la pantalla pinte los datos —eso es lo fácil—
- * sino que **reabrir un Pokémon ya visto no dispare una request**. Eso se prueba
- * contando llamadas al cliente de API, que va mockeado entero.
- */
+// Lo que importa no es que la pantalla pinte los datos, sino que reabrir un
+// Pokémon ya visto no dispare una request.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'

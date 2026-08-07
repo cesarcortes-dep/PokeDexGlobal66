@@ -1,14 +1,6 @@
-/**
- * Tests de `useVirtualList` (E5, y la evidencia de E7).
- *
- * Se monta un componente mínimo con `h()` en vez de un template string: el build
- * de Vue para bundlers es runtime-only y no compila templates en tiempo de test.
- *
- * Dos cosas hay que falsear porque jsdom no hace layout:
- *  - `clientHeight`, que siempre da 0 y dejaría el viewport en cero filas.
- *  - `requestAnimationFrame`, que se ejecuta sincrónico para no testear el
- *    scheduler del navegador sino el cálculo de la ventana.
- */
+// jsdom no hace layout, así que hay que falsear `clientHeight` y ejecutar
+// `requestAnimationFrame` sincrónico: lo que se prueba es el cálculo de la
+// ventana, no el scheduler del navegador.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'

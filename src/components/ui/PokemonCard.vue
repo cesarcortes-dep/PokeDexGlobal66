@@ -1,20 +1,5 @@
 <script setup lang="ts">
-/**
- * Tarjeta del listado (D1, E2). Reemplaza a la fila de texto plano anterior.
- *
- * Presentación pura: recibe todo por props y no sabe que existen Pinia ni la
- * PokéAPI. La URL del sprite llega armada desde afuera justamente por eso — la
- * regla de `components/ui/` (README: arquitectura) impide importar el cliente de API, y el
- * lint la hace cumplir.
- *
- * El color sale del tipo primario (README: el conflicto grande): `--type-{tipo}-card` para el fondo
- * y `--type-{tipo}` para la forma. La forma **es el icono del tipo ampliado**, el
- * mismo `path` que dibuja el chip a 14px. Un asset, dos usos.
- *
- * Alto fijo (`--row-height`): lo necesita el virtual scroll para calcular offsets
- * (README: escala). Si esta tarjeta creciera sola, la lista se desalinearía al
- * scrollear.
- */
+// Alto fijo (`--row-height`): el virtual scroll calcula offsets con ese número.
 
 import { computed } from 'vue'
 import TypeChip from './TypeChip.vue'
@@ -27,12 +12,11 @@ const props = defineProps<{
   imageUrl: string
 }>()
 
-/** El tipo del slot 1 gobierna el color. Sin tipos todavía, gris neutro. */
+// El tipo del slot 1 gobierna el color; sin tipos todavía, gris neutro.
 const primary = computed(() => props.types[0] ?? 'normal')
 
 const shape = computed(() => TYPE_ICONS[primary.value])
 
-/** `N°001` — tres dígitos, como en el Figma. */
 const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
 </script>
 
@@ -56,11 +40,7 @@ const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
     </div>
 
     <div class="pokemon-card__art">
-      <!--
-        La forma no es decorado suelto: es el icono del tipo a tamaño grande.
-        `preserveAspectRatio` sin `meet` lo deja llenar el recuadro aunque el
-        icono no sea cuadrado (el ala de `flying` es apaisada).
-      -->
+      <!-- La forma es el mismo icono del chip, ampliado. -->
       <svg
         v-if="shape"
         class="pokemon-card__shape"
@@ -71,11 +51,7 @@ const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
         <path v-for="(d, i) in shape.paths" :key="i" :d="d" fill="currentColor" />
       </svg>
 
-      <!--
-        `loading="lazy"` y dimensiones fijas: los sprites de las filas que no se
-        ven no se descargan, y el hueco está reservado antes de que lleguen, así
-        que la lista no salta mientras cargan (CLS 0).
-      -->
+      <!-- Dimensiones fijas: reservan el hueco y la lista no salta al cargar. -->
       <img
         class="pokemon-card__sprite"
         :src="imageUrl"
@@ -106,7 +82,7 @@ const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
-    min-width: 0; // deja que el nombre trunque en vez de desbordar la tarjeta
+    min-width: 0; // deja truncar el nombre en vez de desbordar
     padding: var(--sp-2) 0;
   }
 
@@ -122,10 +98,8 @@ const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
     margin: 0;
     font-size: var(--fs-name);
     font-weight: var(--fw-name);
-    // El Figma marca 100%, pero `truncate` necesita `overflow: hidden` y con la
-    // caja de línea igual al tamaño de fuente los descendentes (la `g` de
-    // "Pidgeot") quedan afuera y se recortan. 1.2 les da lugar sin aflojar el
-    // aire del diseño.
+    // El Figma marca 100%, pero con `overflow: hidden` eso recorta los
+    // descendentes: la `g` de "Pidgeot" se corta.
     line-height: 1.2;
     color: var(--c-text);
     text-transform: capitalize;
@@ -136,9 +110,7 @@ const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
     gap: var(--sp-2);
     padding: 0;
     margin: 0;
-    // Los chips son el elemento más ancho de la columna. Sin permitirles
-    // encogerse, empujan y obligan al nombre a truncar antes de tiempo.
-    min-width: 0;
+    min-width: 0; // sin esto los chips empujan y truncan el nombre antes de tiempo
     list-style: none;
   }
 
@@ -147,26 +119,18 @@ const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    // Proporción y no ancho fijo: en el Figma el panel ocupa cerca de un tercio
-    // de la tarjeta, así que cuando la tarjeta crece en desktop crece con ella.
-    width: 32%;
+    width: 32%; // proporción y no ancho fijo: crece con la tarjeta
     min-width: 96px;
     height: 100%;
-    // Recorta la forma al panel. Sin esto se derrama sobre el nombre.
-    overflow: hidden;
+    overflow: hidden; // sin esto la forma se derrama sobre el nombre
     color: var(--card-shape);
   }
 
   &__shape {
     position: absolute;
-    // `meet` en lugar de `slice`: la forma entra completa en el panel en vez de
-    // escalarse hasta cubrirlo. Con `slice`, un icono angosto como la gota de
-    // `water` se agrandaba hasta desbordar la tarjeta entera.
     inset: 0;
     width: 100%;
     height: 100%;
-    // Más saturado que el fondo, mismo tono: es la misma familia de color, no
-    // una segunda paleta.
     opacity: 0.5;
   }
 
@@ -175,9 +139,7 @@ const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
     width: 72px;
     height: 72px;
     object-fit: contain;
-    // Los sprites de PokéAPI son pixel art: sin esto el navegador los suaviza al
-    // escalarlos y se ven borrosos.
-    image-rendering: pixelated;
+    image-rendering: pixelated; // son pixel art: el suavizado los ve borrosos
   }
 }
 </style>

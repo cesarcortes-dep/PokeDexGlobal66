@@ -10,19 +10,14 @@ const router = createRouter({
       component: ListView,
     },
     {
-      // Favoritos es una **ruta** y no un estado interno de la lista: el Figma
-      // lo pone en la barra de navegación, y así tiene URL propia y el botón
-      // "atrás" del navegador funciona entre las dos vistas.
-      //
-      // Reusa `ListView` en lugar de duplicarla: es la misma pantalla con la
-      // fuente de datos filtrada, y `onlyFavorites` se lo dice por props.
+      // Ruta y no estado interno: tiene URL propia y el botón "atrás" funciona.
+      // Reusa `ListView`: es la misma pantalla con la fuente de datos filtrada.
       path: '/favoritos',
       name: 'favorites',
       component: ListView,
       props: { onlyFavorites: true },
     },
     {
-      // El detalle como ruta da URL compartible y "atrás" del navegador gratis.
       // Ruta y no modal: da URL compartible y botón "atrás" en los dos formatos.
       path: '/pokemon/:name',
       name: 'detail',

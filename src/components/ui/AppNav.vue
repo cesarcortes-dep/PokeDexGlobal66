@@ -1,22 +1,6 @@
 <script setup lang="ts">
-/**
- * Navegación principal (D2, README: adaptación a desktop).
- *
- * El Figma la dibuja como barra inferior, que es un patrón de pulgar: en un
- * teléfono el dedo llega abajo y no arriba. En escritorio no hay pulgar, hay
- * puntero, y una barra pegada al borde inferior de una ventana de 1440 px queda
- * lejos de todo. Por eso sube arriba, y comparte fila con el buscador para no
- * gastar una banda entera de altura en dos controles que entran en una.
- *
- * Presentación pura salvo por `RouterLink`, que no es dato ni estado: es la
- * navegación misma. Lo que no hace es decidir a dónde va — las rutas llegan por
- * props.
- *
- * Solo dos pestañas. El Figma tiene cuatro (Pokedex, Regiones, favoritos,
- * Perfil), pero regiones y perfil no existen como funcionalidad: no están en el
- * enunciado y no hay datos detrás. Dos pestañas muertas se leen como app rota,
- * no como fidelidad al diseño.
- */
+// El Figma la dibuja como barra inferior, que es un patrón de pulgar. En
+// escritorio sube arriba y comparte fila con el buscador.
 
 import { RouterLink } from 'vue-router'
 
@@ -42,10 +26,7 @@ const icons = ICONS
   <nav class="app-nav" aria-label="Navegación principal">
     <ul class="app-nav__list">
       <li v-for="item in items" :key="item.to">
-        <!--
-          `RouterLink` marca la ruta activa con `router-link-active`, pero eso es
-          una clase y no llega a un lector de pantalla. `aria-current="page"` sí.
-        -->
+        <!-- `router-link-active` es solo una clase; `aria-current` sí se anuncia. -->
         <RouterLink v-slot="{ isActive, href, navigate }" :to="item.to" custom>
           <a
             class="app-nav__item"

@@ -1,13 +1,5 @@
-/**
- * Tests de la pantalla principal (E5).
- *
- * Es el test que sostiene E7 de punta a punta: con el universo completo cargado,
- * cuenta cuántas filas hay **realmente en el DOM**. La afirmación "pienso en gran
- * cantidad de data" deja de ser una frase del README y pasa a ser un número que
- * falla si alguien saca el virtual scroll.
- *
- * La capa de red se mockea entera: la view no debe saber que existe.
- */
+// Con el universo completo cargado, cuenta cuántas tarjetas hay realmente en el
+// DOM: es el test que falla si alguien saca el virtual scroll.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
@@ -31,10 +23,6 @@ vi.mock('@/api/pokeApi', async (importOriginal) => ({
   fetchPokemonList: fetchPokemonListMock,
 }))
 
-/**
- * `onlyFavorites` llega por props porque favoritos es una ruta propia
- * (`/favoritos`) y no un estado interno de la pantalla.
- */
 function mountView(props: { onlyFavorites?: boolean } = {}) {
   return mount(ListView, {
     props,
@@ -43,13 +31,7 @@ function mountView(props: { onlyFavorites?: boolean } = {}) {
   })
 }
 
-/**
- * Nombres de las tarjetas visibles.
- *
- * Se lee el elemento del nombre y no el texto de la tarjeta entera: la tarjeta
- * también muestra el número y los chips de tipo, así que comparar contra
- * `.text()` mezclaría todo.
- */
+/** Solo el nombre: la tarjeta también muestra el número y los chips. */
 function cardNames(wrapper: ReturnType<typeof mountView>): string[] {
   return wrapper.findAll('.pokemon-card__name').map((el) => el.text())
 }
@@ -64,10 +46,8 @@ async function search(wrapper: ReturnType<typeof mountView>, text: string) {
 }
 
 beforeEach(() => {
-  // El piso de 600 ms del loader dejaría la pantalla de carga puesta después de
-  // que llegan los datos, y estos tests corren con reloj real: verían el loader
-  // en vez de la lista. `?loader=0` lo desactiva. Que el piso funcione lo prueba
-  // `useMinimumDuration.spec`, que sí controla el tiempo.
+  // Estos tests corren con reloj real: sin desactivar el piso del loader verían
+  // la pantalla de carga en vez de la lista.
   window.history.replaceState({}, '', '/?loader=0')
 
   setActivePinia(createPinia())
@@ -99,14 +79,8 @@ describe('ListView', () => {
     expect(wrapper.find('[role="status"]').exists()).toBe(false)
   })
 
-  /**
-   * La evidencia de E7, medida en los dos layouts.
-   *
-   * Con la grilla el número **cambia con las columnas**: una fila de
-   * escritorio son 3 tarjetas, así que cada unidad de overscan cuesta 3 nodos y
-   * no 1. Medir solo en una columna y dar el número por válido para desktop sería
-   * exactamente la afirmación sin respaldo que este proyecto evita.
-   */
+  // El número cambia con las columnas: una fila de escritorio son 3 tarjetas, así
+  // que cada unidad de overscan cuesta 3 nodos y no 1.
   describe.each([
     { ancho: 500, columnas: 1, tope: 20 },
     { ancho: 1000, columnas: 2, tope: 40 },
@@ -120,8 +94,6 @@ describe('ListView', () => {
       const cards = wrapper.findAll('.pokemon-card')
       expect(cards.length).toBeGreaterThan(0)
       expect(cards.length).toBeLessThan(tope)
-      // Lo que importa no es el número exacto sino el orden de magnitud: son
-      // decenas contra 1351, y sigue siendo múltiplo de las columnas.
       expect(cards.length % columnas).toBe(0)
     })
   })
@@ -137,8 +109,7 @@ describe('ListView', () => {
     const wrapper = mountView()
     await flushPromises()
 
-    // Se apunta al link de la tarjeta: `find('a')` traería el de la barra de
-    // navegación, que ahora también es un <a> y aparece antes en el DOM.
+    // Al link de la tarjeta: `find('a')` traería el de la barra de navegación.
     expect(wrapper.find('.list-view__link').attributes('href')).toBe('/pokemon/pokemon-0')
   })
 
@@ -147,8 +118,7 @@ describe('ListView', () => {
       const wrapper = mountView()
       await flushPromises()
 
-      // El último de la lista: cualquier otro nombre sería prefijo de varios
-      // (buscar "pokemon-42" matchea también 420…429, y está bien que así sea).
+      // El último: cualquier otro nombre sería prefijo de varios.
       await search(wrapper, `pokemon-${TOTAL_POKEMON - 1}`)
 
       expect(wrapper.findAll('.pokemon-card')).toHaveLength(1)

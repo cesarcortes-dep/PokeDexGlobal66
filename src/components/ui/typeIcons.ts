@@ -1,25 +1,14 @@
-/**
- * Iconos de los 18 tipos, exportados del Figma.
- *
- * Van como datos y no como 18 archivos `.vue`: son un solo `path` cada uno (salvo
- * `ice`), siempre monocromos, y se dibujan todos con el mismo componente
- * (`TypeIcon.vue`). Dieciocho componentes idénticos salvo por una cadena serían
- * dieciocho archivos para mantener.
- *
- * El `fill` original del Figma era `#FAFAFA` fijo. Se cambia por `currentColor`
- * para que el color lo decida quien lo use — el chip lo pinta claro sobre el
- * color del tipo, y el mismo icono sirve en cualquier otro contexto.
- *
- * Cada icono trae su `viewBox` propio: no todos son cuadrados (el ala de
- * `flying` es apaisada, la gota de `water` es angosta).
- */
+// Van como datos y no como 18 componentes idénticos salvo por una cadena.
+//
+// Cada uno trae su `viewBox` propio: no todos son cuadrados — el ala de `flying`
+// es apaisada, la gota de `water` angosta.
 
 export interface TypeIcon {
   viewBox: string
   paths: string[]
 }
 
-/** Nombres en español, tal como aparecen en el Figma. */
+/** Nombres en español, como aparecen en el Figma. */
 export const TYPE_LABELS: Record<string, string> = {
   normal: 'Normal',
   fighting: 'Lucha',

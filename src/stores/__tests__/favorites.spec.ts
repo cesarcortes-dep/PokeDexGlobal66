@@ -1,10 +1,4 @@
-/**
- * Tests del store de favoritos (E5, F1, F7).
- *
- * No mockea nada: el store no toca la red ni depende del cliente de API. Es la
- * capa más barata de testear del proyecto justamente porque no tiene
- * dependencias — y eso es consecuencia de guardar nombres y no entidades.
- */
+// No mockea nada: el store no toca la red ni depende del cliente de API.
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'

@@ -1,17 +1,6 @@
-/**
- * Tests de `PokeballLoader` (F5, E5).
- *
- * No tiene sentido testear que la animación "se ve bien" —eso se mira en el
- * navegador—, así que acá van las dos cosas que se rompen en silencio:
- *
- *  1. Que el SVG no vuelva a traer un `id`. El export del Figma usaba un
- *     `<mask id="mask0_9_835">`, y un id dentro de un componente montado dos
- *     veces choca consigo mismo: el navegador no avisa, simplemente pinta mal.
- *  2. Que el texto siga siendo visible. Con `prefers-reduced-motion` la
- *     animación queda congelada por la regla global de main.scss; si la única
- *     señal de carga fuera el movimiento, esa persona no vería nada. Un
- *     `sr-only` acá sería una regresión de accesibilidad invisible en revisión.
- */
+// Que la animación se vea bien se mira en el navegador. Acá van las dos cosas
+// que se rompen en silencio: un `id` duplicado en el SVG y el texto de carga
+// volviéndose invisible.
 
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'

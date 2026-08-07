@@ -1,10 +1,5 @@
-/**
- * Tests de `useClipboard` (E5, F6).
- *
- * Lo que hay que probar acá no es el camino feliz —`navigator.clipboard` lo
- * resuelve solo— sino los dos que se rompen en producción: contexto no seguro
- * (sin HTTPS la API no existe) y permiso denegado por el usuario.
- */
+// El camino feliz lo resuelve `navigator.clipboard`. Lo que hay que probar son
+// los dos que se rompen en producción: sin HTTPS y con permiso denegado.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'

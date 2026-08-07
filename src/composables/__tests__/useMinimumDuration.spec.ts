@@ -1,10 +1,5 @@
-/**
- * Tests de `useMinimumDuration` (F5, E5).
- *
- * Lo que importa acá es que sostenga lo justo: ni menos —vuelve el parpadeo— ni
- * más —la app se siente lenta a cambio de nada—. Con timers falsos se puede
- * afirmar el milisegundo exacto en vez de esperar de verdad.
- */
+// Sostener lo justo: ni menos, que vuelve el parpadeo, ni más, que hace la app
+// lenta. Con timers falsos se afirma el milisegundo exacto.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref, type Ref } from 'vue'
@@ -14,7 +9,7 @@ import { useMinimumDuration } from '../useMinimumDuration'
 
 const MIN_MS = 600
 
-/** Monta el composable dentro de un scope real, para que `onScopeDispose` corra. */
+/** Dentro de un scope real, para que `onScopeDispose` corra. */
 function setup(initial: boolean, minMs: number | Ref<number> = MIN_MS) {
   const source = ref(initial)
   let held!: Ref<boolean>

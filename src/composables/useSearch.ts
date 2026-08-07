@@ -1,30 +1,14 @@
-/**
- * Búsqueda por nombre en cliente (F8).
- *
- * Por qué en cliente: PokéAPI no tiene búsqueda por texto parcial y el enunciado
- * acota a dos endpoints. Todo el universo ya está en el store (README: escala).
- *
- * Claves de rendimiento (E7):
- *  - debounce del input (~200 ms), no filtrar por tecla
- *  - normalizar una sola vez en un `computed`, no dentro del filter
- */
+// En cliente porque la PokéAPI no tiene búsqueda por texto parcial y el universo
+// ya está en el store.
 
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { PokemonListItem } from '@/api/types'
 
-/**
- * Ventana de quietud antes de filtrar. No ahorra requests —la búsqueda es local—
- * sino renders: sin esto, escribir "charizard" recorre 1351 nombres nueve veces y
- * repinta la lista otras nueve, de las cuales ocho el usuario no llega a ver.
- */
+// No ahorra requests, porque la búsqueda es local: ahorra renders.
 const DEBOUNCE_MS = 200
 
-/**
- * Baja a minúsculas y saca los diacríticos. `NFD` separa la letra de su acento y
- * el rango ̀-ͯ borra el acento suelto, así "Pokémon" y "pokemon" son la
- * misma búsqueda.
- */
+/** `NFD` separa la letra de su acento; el rango borra el acento suelto. */
 function normalize(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 }
@@ -34,7 +18,7 @@ export interface UseSearchReturn {
   query: Ref<string>
   /** Resultado ya filtrado. */
   results: Ref<PokemonListItem[]>
-  /** true cuando hay query y cero resultados → estado vacío del Figma. */
+  /** Hay query y cero resultados. */
   isEmpty: Ref<boolean>
 }
 
@@ -53,13 +37,7 @@ export function useSearch(source: Ref<PokemonListItem[]>): UseSearchReturn {
 
   onBeforeUnmount(() => clearTimeout(timer))
 
-  /**
-   * Índice normalizado. Es un `computed` sobre `source`, así que se recalcula
-   * cuando cambia la lista —una vez por sesión— y **no** cuando cambia la query.
-   *
-   * Es la diferencia entre normalizar 1351 nombres una vez o normalizarlos de
-   * nuevo en cada tecla dentro del `filter`.
-   */
+  // Computed sobre `source`: se recalcula al cambiar la lista, no al teclear.
   const index = computed(() =>
     source.value.map((item) => ({ item, haystack: normalize(item.name) })),
   )
@@ -71,7 +49,7 @@ export function useSearch(source: Ref<PokemonListItem[]>): UseSearchReturn {
     return index.value.filter((entry) => entry.haystack.includes(needle)).map((entry) => entry.item)
   })
 
-  /** Distingue "no busqué nada todavía" de "busqué y no hay". Solo el segundo es vacío. */
+  // Distingue "no busqué" de "busqué y no hay": solo el segundo es vacío.
   const isEmpty = computed(
     () => normalize(debouncedQuery.value).length > 0 && !results.value.length,
   )

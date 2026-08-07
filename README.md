@@ -58,10 +58,8 @@ src/
   api/          pokeApi.ts, types.ts               ← única capa que hace fetch
   stores/       pokemon.ts, favorites.ts, types.ts ← Pinia: fuente de verdad + reglas
   composables/  useVirtualList, useSearch, useClipboard, useMinimumDuration
-  components/
-    ui/         presentación pura
-    features/   conectados al store
-  views/        ListView, DetailView
+  components/ui/  presentación pura, sin acceso a datos
+  views/        ListView, DetailView          ← orquestan: piden al store y componen
   styles/       _tokens.scss, _mixins.scss
 ```
 
@@ -80,7 +78,10 @@ Dónde vive cada cosa, para que "capas" no sea una palabra vacía:
   está cargado". No sabe qué es una URL.
 - **`composables/`** — comportamiento reusable de UI que no sabe qué store existe.
   `useVirtualList` sirve para cualquier lista.
-- **`components/ui/`** — presentación pura. **`components/features/`** — el pegamento.
+- **`components/ui/`** — presentación pura: reciben props, emiten eventos.
+- **`views/`** — el pegamento. Piden datos al store y componen componentes. Empezaron
+  como una capa `components/features/` aparte, pero con dos pantallas esa carpeta
+  habría tenido un archivo por vista y nada más: una capa de un solo lector.
 
 **De clean architecture tomé dos cosas y descarté tres**, y las tres a propósito:
 

@@ -1,12 +1,4 @@
-/**
- * Tests del cliente de API (E5).
- *
- * `it.todo` deja listado en el reporte de Vitest lo que todavía no se implementó:
- * sirve de checklist vivo. Se van cambiando a `it` a medida que se avanza.
- *
- * La red se mockea siempre (`vi.stubGlobal('fetch', ...)`), nunca se pega a
- * PokéAPI de verdad: un test que depende de internet no es un test.
- */
+// La red se mockea siempre: un test que depende de internet no es un test.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {

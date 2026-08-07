@@ -2,21 +2,7 @@ import { onScopeDispose, ref, toValue, watch, type MaybeRefOrGetter, type Ref } 
 
 /**
  * Mantiene una bandera encendida un tiempo mínimo, aunque su origen se apague
- * antes (F5).
- *
- * El problema que resuelve no es estético. Cuando el listado responde en 250 ms,
- * el loader aparece y desaparece dentro del mismo pestañeo: no se lee como
- * "está cargando", se lee como un parpadeo raro. Sostenerlo un instante hace que
- * la transición tenga principio y fin.
- *
- * Lo que NO hace es retrasar los datos. La request sale igual de rápido y el
- * resultado se guarda apenas llega; lo único que se sostiene es lo que se
- * muestra. Demorar la request para que se vea el loader sería hacer la app peor
- * a cambio de una animación.
- *
- * El mínimo es un `MaybeRefOrGetter` a propósito: así puede venir de un
- * `computed` —por ejemplo, de un parámetro de URL para una demo— sin que este
- * composable sepa de dónde sale.
+ * antes. Sostiene lo que se muestra, no retrasa los datos.
  */
 export function useMinimumDuration(
   source: Ref<boolean>,
@@ -24,11 +10,8 @@ export function useMinimumDuration(
 ): Ref<boolean> {
   const held = ref(source.value)
 
-  /**
-   * `Date.now()` y no un contador propio: el `setTimeout` de una pestaña en
-   * segundo plano se estira, y restar timestamps da el tiempo real transcurrido
-   * en vez del que el timer creía que iba a pasar.
-   */
+  // Timestamps y no un contador: el `setTimeout` de una pestaña en segundo plano
+  // se estira, y restar da el tiempo que pasó de verdad.
   let startedAt = source.value ? Date.now() : 0
   let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -40,8 +23,7 @@ export function useMinimumDuration(
 
   watch(source, (active) => {
     if (active) {
-      // Una carga nueva cancela el remanente de la anterior: si no, dos cargas
-      // seguidas apagarían el loader a mitad de la segunda.
+      // Cancela el remanente de la carga anterior, si quedaba alguno.
       clear()
       startedAt = Date.now()
       held.value = true
@@ -62,8 +44,6 @@ export function useMinimumDuration(
     }, remaining)
   })
 
-  // Un timer vivo después de desmontar escribe sobre un ref que ya no mira
-  // nadie. No rompe nada visible, pero es una fuga.
   onScopeDispose(clear)
 
   return held

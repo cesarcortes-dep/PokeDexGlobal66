@@ -1,11 +1,4 @@
 <script setup lang="ts">
-/**
- * Input de búsqueda (F8, E2).
- *
- * Presentación pura: no filtra nada ni sabe qué se está buscando. Recibe el
- * valor y emite el nuevo. Quien decide qué hacer con el texto es la view.
- */
-
 defineProps<{
   modelValue: string
   label: string
@@ -17,8 +10,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
 
 <template>
   <label class="search-input">
-    <!-- La etiqueta se oculta a la vista pero no a un lector de pantalla: un
-         input sin label accesible es un campo sin nombre. -->
+    <!-- Oculta a la vista, no a un lector de pantalla. -->
     <span class="search-input__label">{{ label }}</span>
     <input
       class="search-input__field"
