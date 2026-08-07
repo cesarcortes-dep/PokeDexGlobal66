@@ -38,6 +38,6 @@ Qué se vuelve fácil, qué se vuelve caro, qué queda por revisar.
 | [0002](./ADR-0002-figma-desktop-primero-en-diseno.md) | La adaptación a desktop es decisión de diseño, no de pulido | Aceptada |
 | [0003](./ADR-0003-stack.md) | Stack | Aceptada |
 | [0004](./ADR-0004-estrategia-de-datos-y-escala.md) | Estrategia de datos y escala | Aceptada |
-| 0005 | *Reservado* — layout desktop, depende del Figma | Pendiente |
+| [0005](./ADR-0005-layout-desktop.md) | Layout desktop: grilla, no columna estirada | Aceptada |
 | [0006](./ADR-0006-arquitectura-por-capas.md) | Arquitectura por capas | Aceptada |
 | [0007](./ADR-0007-conflicto-figma-vs-dos-llamados.md) | El Figma pide datos que "dos llamados" no alcanzan | Aceptada (revisa 0004) |

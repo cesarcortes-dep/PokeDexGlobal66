@@ -9,21 +9,32 @@
  * decisión que el evaluador quiere ver razonada. Si el tiempo aprieta, se cambia
  * por la librería y se anota el cambio en el journal.
  *
- * Requiere alto de fila FIJO. Si el Figma tuviera filas de alto variable,
+ * Requiere alto de fila FIJO. Si el diseño tuviera filas de alto variable,
  * esta decisión se cae y hay que revisarla.
+ *
+ * Sirve para una columna y para una grilla: lo que virtualiza son **filas**, y
+ * cuántos ítems entran en cada una lo decide quien lo usa (ADR-0005).
  *
  * No sabe qué store existe ni qué renderiza: recibe un `Ref` de items y devuelve
  * geometría. Por eso sirve para cualquier lista y se testea sin montar la app.
  */
 
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toValue, watch } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 
 export interface UseVirtualListOptions {
-  /** Alto de cada fila en px. Sale de los tokens del Figma. */
+  /** Alto de cada fila en px, separación incluida. */
   itemHeight: number
   /** Filas extra arriba y abajo del viewport, para que no parpadee al scrollear. */
   overscan?: number
+  /**
+   * Cuántos ítems entran por fila. 1 es una lista clásica; más de 1 es una
+   * grilla (ADR-0005: en desktop la lista pasa a varias columnas).
+   *
+   * Acepta un ref porque el número de columnas cambia al redimensionar la
+   * ventana, y la ventana visible tiene que recalcularse cuando eso pasa.
+   */
+  itemsPerRow?: MaybeRefOrGetter<number>
 }
 
 export interface UseVirtualListReturn<T> {
@@ -88,29 +99,36 @@ export function useVirtualList<T>(
     window.removeEventListener('resize', measureViewport)
   })
 
+  /** Nunca menos de una columna: un 0 haría dividir por cero al contar filas. */
+  const perRow = computed(() => Math.max(1, Math.floor(toValue(options.itemsPerRow ?? 1))))
+
+  /** Lo que se virtualiza son **filas**, no ítems: con 3 columnas, 1351 ítems son 451 filas. */
+  const rowCount = computed(() => Math.ceil(items.value.length / perRow.value))
+
   /** Cuántas filas entran en el viewport, más el colchón de arriba y abajo. */
-  const visibleCount = computed(() => Math.ceil(viewportHeight.value / itemHeight) + overscan * 2)
+  const visibleRows = computed(() => Math.ceil(viewportHeight.value / itemHeight) + overscan * 2)
 
   /**
    * El `Math.min` no es defensivo por gusto: cuando la lista se achica de golpe
    * (filtrar 1350 a 3 con la búsqueda) el `scrollTop` del navegador todavía apunta
-   * al fondo viejo. Sin el tope, `startIndex` se va más allá del final, el `slice`
+   * al fondo viejo. Sin el tope, `startRow` se va más allá del final, el `slice`
    * devuelve vacío y la pantalla queda en blanco con resultados que sí existen.
    */
-  const startIndex = computed(() => {
+  const startRow = computed(() => {
     const raw = Math.floor(scrollTop.value / itemHeight) - overscan
-    const maxStart = Math.max(0, items.value.length - visibleCount.value)
+    const maxStart = Math.max(0, rowCount.value - visibleRows.value)
     return Math.min(Math.max(0, raw), maxStart)
   })
 
-  const visibleItems = computed(() =>
-    items.value
-      .slice(startIndex.value, startIndex.value + visibleCount.value)
-      .map((item, i) => ({ item, index: startIndex.value + i })),
-  )
+  const visibleItems = computed(() => {
+    const from = startRow.value * perRow.value
+    const to = from + visibleRows.value * perRow.value
 
-  const totalHeight = computed(() => items.value.length * itemHeight)
-  const offsetY = computed(() => startIndex.value * itemHeight)
+    return items.value.slice(from, to).map((item, i) => ({ item, index: from + i }))
+  })
+
+  const totalHeight = computed(() => rowCount.value * itemHeight)
+  const offsetY = computed(() => startRow.value * itemHeight)
 
   return { containerRef, visibleItems, totalHeight, offsetY }
 }

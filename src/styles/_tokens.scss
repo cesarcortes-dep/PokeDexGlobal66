@@ -42,17 +42,20 @@ $type-colors: (
   'fairy': #e91e63,
 );
 
-/// Cuánto blanco lleva el fondo de la tarjeta respecto del color del chip.
+/// Opacidad del fondo de la tarjeta.
 ///
-/// El fondo se **deriva** en vez de guardarse aparte: así hay un solo valor por
-/// tipo y corregir un color del Figma corrige también su tarjeta. Se resuelve en
-/// tiempo de compilación, no con `color-mix()` en runtime.
-$type-soft-tint: 45%;
+/// El Figma lo define como `#RRGGBB80` para cada tipo — es decir, **el mismo color
+/// del chip al 50%**. No son 18 colores nuevos: es una regla. Guardarlos aparte
+/// daría 18 valores que hay que acordarse de cambiar cuando cambie el del chip.
+///
+/// Va como `rgba` y no como una mezcla con blanco a propósito: así compone sobre
+/// el fondo que tenga debajo en lugar de asumir que la página es clara.
+$type-card-alpha: 0.5;
 
 :root {
   @each $name, $hex in $type-colors {
     --type-#{$name}: #{$hex};
-    --type-#{$name}-soft: #{color.mix(#fff, $hex, $type-soft-tint)};
+    --type-#{$name}-card: #{rgba($hex, $type-card-alpha)};
   }
 
   // --- Color -------------------------------------------------------------
@@ -69,7 +72,7 @@ $type-soft-tint: 45%;
   --c-favorite-circle: rgb(117 117 117 / 60%);
 
   // --- Tipografía --------------------------------------------------------
-  // TODO: Poppins todavía no está instalada. Ver la nota del journal.
+  // Auto-hospedada con @fontsource, solo los pesos 400/500/600 que usa el Figma.
   --font-family: 'Poppins', system-ui, -apple-system, sans-serif;
 
   // Título del detalle: Poppins Medium 26 / 100%, centrado.
@@ -108,8 +111,10 @@ $type-soft-tint: 45%;
   // ROW_HEIGHT de ListView.vue, que lo inyecta como custom property. Definirlo
   // también acá permitiría que CSS y cálculo se desincronicen en silencio.
   //
-  // Valores del Figma para esa constante: tarjeta de 102px + gap de 12px = paso
-  // real de 114px.
-  --row-gap: 12px;
-  --content-max-width: 328px; // mobile. El desktop se define en ADR-0005.
+  // `--row-gap` tampoco: lo inyecta ListView junto con `--row-height`, porque el
+  // paso del virtual scroll es la suma de los dos.
+  // Ancho del contenido. Los 328px del Figma son la referencia mobile; el
+  // entregable es desktop (ADR-0005), y la grilla necesita espacio para que las
+  // tarjetas sean grandes de verdad.
+  --content-max-width: 1400px;
 }

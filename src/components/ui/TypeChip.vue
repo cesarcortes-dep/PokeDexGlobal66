@@ -46,7 +46,7 @@ const label = computed(() => TYPE_LABELS[props.type] ?? props.type)
   align-items: center;
   padding: var(--sp-1) var(--sp-3);
   font-size: var(--fs-body);
-  line-height: 1;
+  line-height: 1.25;
   // Claro sobre el color del tipo, igual que en el Figma. El icono hereda este
   // color vía `currentColor`, así que no hay que pintarlo aparte.
   color: var(--c-bg);
