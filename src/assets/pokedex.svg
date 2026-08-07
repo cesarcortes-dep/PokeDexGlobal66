@@ -1,0 +1,45 @@
+<svg width="460" height="700" viewBox="0 0 460 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Marco de Pokédex — EXPERIMENTO (rama experimento/marco-pokedex).
+
+    Contorno solo en el borde exterior: le da silueta al aparato contra el fondo
+    claro de la página. Las piezas de adentro se separan por color, sin trazos
+    propios, que volvían el dibujo una ilustración de sticker.
+
+    Bisel y pantalla comparten un mismo color: con dos grises el sprite quedaba
+    dentro de un recuadro dentro de otro, y la caja competía con el Pokémon.
+
+    Ojo: los comentarios XML no admiten dos guiones seguidos. Escribir el nombre
+    de una custom property acá deja el archivo malformado y el navegador no lo
+    dibuja, sin que el build avise.
+
+    Reemplazable por otra ilustración con la misma proporción; si la posición de
+    la pantalla cambia, hay que reajustar las variables que declara DetailView
+    sobre el contenedor del marco.
+  -->
+  <!--
+    Metido media pincelada desde el borde: el trazo se dibuja centrado sobre el
+    contorno, así que sin ese margen la mitad de afuera quedaría recortada por el
+    viewBox y el borde se vería más fino de un lado.
+  -->
+  <rect x="3" y="3" width="454" height="694" rx="31" fill="#D6272C" stroke="#1B1B1B" stroke-width="6" />
+
+  <!-- Lente y luces -->
+  <circle cx="76" cy="78" r="32" fill="#FAFAFA" />
+  <circle cx="76" cy="78" r="25" fill="#3FB9F0" />
+  <circle cx="140" cy="62" r="10" fill="#B71C1C" />
+  <circle cx="174" cy="62" r="10" fill="#F5D93B" />
+  <circle cx="208" cy="62" r="10" fill="#3FAE49" />
+
+  <!--
+    Pantalla: una sola superficie, sin bisel interior. Acá se apoya el sprite.
+  -->
+  <path d="M44 148h372v352l-46 46H44z" fill="#EDEDED" />
+
+  <!-- Controles inferiores -->
+  <circle cx="88" cy="596" r="24" fill="#4A4A4A" />
+  <rect x="136" y="588" width="74" height="13" rx="6" fill="#B71C1C" />
+  <rect x="228" y="588" width="74" height="13" rx="6" fill="#2AA9A2" />
+  <rect x="136" y="622" width="140" height="46" rx="8" fill="#3FAE49" />
+  <path d="M320 612h32v-32h32v32h32v32h-32v32h-32v-32h-32z" fill="#4A4A4A" />
+</svg>

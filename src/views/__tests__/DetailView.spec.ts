@@ -79,8 +79,9 @@ describe('DetailView', () => {
       const { wrapper } = await mountDetail()
       await wrapper.find('.detail-view__share').trigger('click')
 
-      // Valores ya formateados: pegado en un chat, "6 kg" se entiende y "60" no.
-      expect(writeText).toHaveBeenCalledWith('pikachu,6 kg,0.4 m,electric')
+      // Copia lo que se ve en pantalla, no lo que devuelve la API: nombre
+      // capitalizado, tipos en español y unidades incluidas.
+      expect(writeText).toHaveBeenCalledWith('Pikachu,6 kg,0.4 m,Eléctrico')
       vi.unstubAllGlobals()
     })
 
@@ -101,7 +102,9 @@ describe('DetailView', () => {
   it('usa el nombre como texto alternativo de la imagen', async () => {
     const { wrapper } = await mountDetail()
 
-    const img = wrapper.find('img')
+    // Se apunta al sprite: `find('img')` traería el marco del Pokédex, que es
+    // decorativo y aparece antes en el DOM.
+    const img = wrapper.find('.detail-view__image')
     expect(img.attributes('src')).toBe('https://img/artwork.png')
     expect(img.attributes('alt')).toBe('pikachu')
   })
@@ -110,7 +113,7 @@ describe('DetailView', () => {
     fetchPokemonByNameMock.mockResolvedValue({ ...PIKACHU, imageUrl: null })
     const { wrapper } = await mountDetail()
 
-    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.find('.detail-view__image').exists()).toBe(false)
     expect(wrapper.text()).toContain('pikachu')
   })
 

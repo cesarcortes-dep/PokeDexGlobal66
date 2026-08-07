@@ -22,7 +22,8 @@ import AppIcon from '@/components/ui/AppIcon.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import FavoriteStar from '@/components/ui/FavoriteStar.vue'
 import TypeChip from '@/components/ui/TypeChip.vue'
-import { TYPE_ICONS } from '@/components/ui/typeIcons'
+import { TYPE_LABELS } from '@/components/ui/typeIcons'
+import pokedexFrame from '@/assets/pokedex.svg'
 import type { Pokemon } from '@/api/types'
 
 const props = defineProps<{ name: string }>()
@@ -86,10 +87,6 @@ watch(
   { immediate: true },
 )
 
-/** El tipo del slot 1 gobierna el color, igual que en la tarjeta del listado. */
-const primary = computed(() => pokemon.value?.types[0] ?? 'normal')
-const shape = computed(() => TYPE_ICONS[primary.value])
-
 const weaknesses = computed(() => (pokemon.value ? types.weaknessesOf(pokemon.value.id) : []))
 
 const number = computed(() =>
@@ -100,13 +97,18 @@ const number = computed(() =>
  * Lo que copia el botón compartir (F6, supuesto S4): nombre y los atributos que
  * esta pantalla muestra, separados por coma.
  *
- * Se arma con los valores ya formateados y no con los crudos: si alguien pega
- * esto en un chat, "6.9 kg" se entiende y "69" no.
+ * Copia **lo que se ve**, no lo que devuelve la API: nombre capitalizado, tipos
+ * en español y unidades incluidas. Si alguien pega esto en un chat, "6.9 kg" se
+ * entiende y "69" no, y "Planta" es lo que leyó en pantalla, no "grass".
  */
 const shareText = computed(() => {
   const p = pokemon.value
   if (!p) return ''
-  return [p.name, `${p.weight} kg`, `${p.height} m`, ...p.types].join(',')
+
+  const name = p.name.charAt(0).toUpperCase() + p.name.slice(1)
+  const types = p.types.map((type) => TYPE_LABELS[type] ?? type)
+
+  return [name, `${p.weight} kg`, `${p.height} m`, ...types].join(',')
 })
 </script>
 
@@ -117,73 +119,65 @@ const shareText = computed(() => {
       derecha, que es como se lee una ficha con espacio horizontal. En una sola
       columna, todo lo importante quedaba debajo del pliegue.
 
-      La cabecera se pinta con el color del tipo y lleva la misma forma que la
-      tarjeta del listado: es el mismo icono de tipo ampliado. Así las dos
-      pantallas se leen como la misma app sin repetir un solo asset.
+      El sprite se apoya sobre la pantalla de un Pokédex dibujado. Es un
+      EXPERIMENTO (rama experimento/marco-pokedex): no está en el Figma, así que
+      si se queda hay que documentarlo como desviación de D1.
+
+      Las acciones quedan FUERA del marco: superpuestas al dibujo competirían
+      con sus propios botones y serían difíciles de encontrar.
     -->
-    <div class="detail-view__layout">
-    <div class="detail-view__media">
-    <header
-      class="detail-view__hero"
-      :style="{
-        '--card-bg': `var(--type-${primary}-card)`,
-        '--card-shape': `var(--type-${primary})`,
-      }"
-    >
-      <div class="detail-view__actions">
-        <RouterLink
-          class="detail-view__back"
-          :to="{ name: backTo }"
-          :aria-label="backTo === 'favorites' ? 'Volver a favoritos' : 'Volver al listado'"
-        >
-          <AppIcon name="back" :size="18" />
-        </RouterLink>
-
-        <FavoriteStar
-          v-if="pokemon"
-          :active="favorites.isFavorite(pokemon.name)"
-          :label="pokemon.name"
-          @toggle="favorites.toggle(pokemon.name)"
-        />
-      </div>
-
-      <svg
-        v-if="shape"
-        class="detail-view__shape"
-        :viewBox="shape.viewBox"
-        preserveAspectRatio="xMidYMid meet"
-        aria-hidden="true"
+    <div class="detail-view__actions">
+      <RouterLink
+        class="detail-view__back"
+        :to="{ name: backTo }"
+        :aria-label="backTo === 'favorites' ? 'Volver a favoritos' : 'Volver al listado'"
       >
-        <path v-for="(d, i) in shape.paths" :key="i" :d="d" fill="currentColor" />
-      </svg>
+        <AppIcon name="back" :size="18" />
+      </RouterLink>
+    </div>
 
-      <img
-        v-if="pokemon?.imageUrl"
-        class="detail-view__image"
-        :src="pokemon.imageUrl"
-        :alt="pokemon.name"
-        width="220"
-        height="220"
-      />
-    </header>
+    <div class="detail-view__layout">
+      <div class="detail-view__device">
+      <img class="detail-view__frame" :src="pokedexFrame" alt="" aria-hidden="true" />
 
       <!--
-        Los tipos viven acá y no junto al nombre: en escritorio la columna de la
-        imagen quedaba con mucho aire debajo, y son el dato que más se relaciona
-        con lo que se está mirando.
+        La ventana se posiciona en porcentajes del marco, no en píxeles: así el
+        sprite sigue apoyado en la pantalla cuando el dibujo escala.
       -->
-      <ul v-if="pokemon" class="detail-view__types">
-        <li v-for="type in pokemon.types" :key="type"><TypeChip :type="type" /></li>
-      </ul>
-    </div>
+      <div class="detail-view__screen">
+        <img
+          v-if="pokemon?.imageUrl"
+          class="detail-view__image"
+          :src="pokemon.imageUrl"
+          :alt="pokemon.name"
+        />
+      </div>
+      </div>
 
     <p v-if="isLoading" class="detail-view__status" role="status">Cargando…</p>
 
     <EmptyState v-else-if="error" role="alert" title="No pudimos abrir este Pokémon" :description="error" />
 
     <article v-else-if="pokemon" class="detail-view__body">
-      <h1 class="detail-view__name">{{ pokemon.name }}</h1>
+      <!--
+        La estrella acompaña al nombre: marcar favorito se refiere a este Pokémon
+        en particular, y arriba junto a la flecha se leía como una acción de la
+        pantalla y no del contenido.
+      -->
+      <div class="detail-view__heading">
+        <h1 class="detail-view__name">{{ pokemon.name }}</h1>
+
+        <FavoriteStar
+          :active="favorites.isFavorite(pokemon.name)"
+          :label="pokemon.name"
+          @toggle="favorites.toggle(pokemon.name)"
+        />
+      </div>
       <p class="detail-view__number">{{ number }}</p>
+
+      <ul class="detail-view__types">
+        <li v-for="type in pokemon.types" :key="type"><TypeChip :type="type" /></li>
+      </ul>
 
       <!-- Lista de descripción: cada atributo es un par nombre/valor, y eso es
            exactamente lo que un <dl> comunica a un lector de pantalla. -->
@@ -263,32 +257,51 @@ const shareText = computed(() => {
     gap: var(--sp-4);
   }
 
-  &__hero {
-    position: relative;
-    display: grid;
-    place-items: center;
-    height: 320px;
-    overflow: hidden;
-    color: var(--card-shape);
-    background-color: var(--card-bg);
-    border-radius: 0 0 var(--radius-card) var(--radius-card);
+  /*
+    Posición de la pantalla dentro del dibujo, en porcentajes del marco.
+    Si se reemplaza el SVG por otra ilustración, estos cuatro valores son lo
+    único que hay que reajustar.
+  */
+  &__device {
+    // Pantalla del dibujo: x 44/460, y 148/700, 372x352 sobre 460x700.
+    --screen-x: 9.6%;
+    --screen-y: 21.1%;
+    --screen-w: 80.9%;
+    --screen-h: 50.3%;
 
-    @include desktop {
-      // Suelto del borde superior: en escritorio la ficha flota, no es una
-      // cabecera pegada al techo de la ventana.
-      border-radius: var(--radius-card);
-    }
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  &__frame {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  &__screen {
+    position: absolute;
+    top: var(--screen-y);
+    left: var(--screen-x);
+    display: grid;
+    width: var(--screen-w);
+    height: var(--screen-h);
+    place-items: center;
+    overflow: hidden;
+  }
+
+  &__image {
+    max-width: 88%;
+    max-height: 88%;
+    // Los sprites de PokéAPI son pixel art: sin esto el navegador los suaviza al
+    // escalarlos y se ven borrosos.
+    image-rendering: pixelated;
   }
 
   &__actions {
-    position: absolute;
-    top: var(--sp-4);
-    right: var(--sp-4);
-    left: var(--sp-4);
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    padding: var(--sp-4);
   }
 
   &__back {
@@ -306,21 +319,6 @@ const shareText = computed(() => {
     }
   }
 
-  &__shape {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0.35;
-  }
-
-  &__image {
-    position: relative; // por encima de la forma
-    width: 220px;
-    height: auto;
-    image-rendering: pixelated;
-  }
-
   &__body {
     padding: var(--sp-6) var(--sp-4);
     text-align: center;
@@ -330,6 +328,17 @@ const shareText = computed(() => {
       // desconecta visualmente de su columna.
       padding: 0;
       text-align: left;
+    }
+  }
+
+  &__heading {
+    display: flex;
+    gap: var(--sp-3);
+    align-items: center;
+    justify-content: center;
+
+    @include desktop {
+      justify-content: flex-start;
     }
   }
 
@@ -347,6 +356,11 @@ const shareText = computed(() => {
     color: var(--c-text-muted);
   }
 
+  /*
+    Los chips siguen la alineación del resto de la columna: centrados cuando todo
+    se apila, y al ras del texto en escritorio. Dejarlos centrados mientras el
+    nombre y los atributos van a la izquierda los desprendía del bloque.
+  */
   &__types {
     display: flex;
     flex-wrap: wrap;
@@ -355,10 +369,7 @@ const shareText = computed(() => {
     padding: 0;
     margin: 0;
     list-style: none;
-  }
 
-  /* Los de debilidades acompañan al texto de su columna, que va a la izquierda. */
-  &__weaknesses &__types {
     @include desktop {
       justify-content: flex-start;
     }
