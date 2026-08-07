@@ -17,7 +17,7 @@ import type { Pokemon, PokemonListItem } from '@/api/types'
 export const TOTAL_POKEMON = 1351
 
 /** Alto de fila y debounce, en sincronía con lo que usa la app. */
-export const ROW_HEIGHT = 60
+export const ROW_HEIGHT = 114 // tarjeta 102 + gap 12
 export const DEBOUNCE_MS = 200
 
 /** Modelo de dominio ya mapeado, tal como lo devuelve `toPokemon()`. */
@@ -74,6 +74,7 @@ export function makeTestRouter(): Router {
     history: createWebHistory(),
     routes: [
       { path: '/', name: 'list', component: stub },
+      { path: '/favoritos', name: 'favorites', component: stub },
       { path: '/pokemon/:name', name: 'detail', component: stub, props: true },
     ],
   })
@@ -88,4 +89,13 @@ export function stubViewportHeight(px = 600): void {
     configurable: true,
     value: px,
   })
+}
+
+/**
+ * Ancho de ventana, que es lo que decide cuántas columnas tiene la grilla
+ * (ADR-0005). jsdom arranca en 1024, así que sin esto los tests medirían siempre
+ * el mismo layout y nunca el de escritorio.
+ */
+export function stubViewportWidth(px: number): void {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: px })
 }

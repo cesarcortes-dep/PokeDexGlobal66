@@ -10,29 +10,88 @@
  *  - maqueta real del Figma
  */
 
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { spriteUrl } from '@/api/pokeApi'
 import { usePokemonStore } from '@/stores/pokemon'
 import { useFavoritesStore } from '@/stores/favorites'
+import { useTypesStore } from '@/stores/types'
 import { useSearch } from '@/composables/useSearch'
 import { useVirtualList } from '@/composables/useVirtualList'
+import AppNav from '@/components/ui/AppNav.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import FavoriteStar from '@/components/ui/FavoriteStar.vue'
-import PokemonRow from '@/components/ui/PokemonRow.vue'
+import PokemonCard from '@/components/ui/PokemonCard.vue'
 import SearchInput from '@/components/ui/SearchInput.vue'
 
 /**
- * Fuente única del alto de fila. Lo define TypeScript y el CSS lo recibe como
- * custom property, no al revés: `useVirtualList` calcula offsets con este número
- * y si el CSS tuviera el suyo propio, los dos se desincronizarían en silencio y
- * la lista quedaría desalineada al scrollear.
- *
- * TODO: ajustar al valor real del Figma.
+ * `onlyFavorites` llega del router, no de un botón interno: favoritos es una
+ * ruta propia (`/favoritos`) y no un estado de esta pantalla. La misma vista
+ * sirve para las dos porque lo único que cambia es la fuente de datos.
  */
-const ROW_HEIGHT = 60
+const props = withDefaults(defineProps<{ onlyFavorites?: boolean }>(), {
+  onlyFavorites: false,
+})
+
+const NAV_ITEMS = [
+  { to: '/', label: 'Pokédex', icon: 'home' as const },
+  { to: '/favoritos', label: 'Favoritos', icon: 'favorites' as const },
+]
+
+/**
+ * Geometría de la lista. El paso del virtual scroll es alto + separación.
+ *
+ * Los 102 px del Figma son la medida **mobile de referencia**; el entregable es
+ * desktop/web (ADR-0005), así que la tarjeta crece para que los nombres largos
+ * entren sin truncar y el sprite respire.
+ *
+ * Lo define TypeScript y el CSS lo recibe como custom property, no al revés:
+ * `useVirtualList` calcula offsets con este número, y si el CSS tuviera el suyo
+ * propio los dos se desincronizarían en silencio y la lista quedaría desalineada
+ * al scrollear.
+ */
+const CARD_HEIGHT = 140
+const CARD_GAP = 16
+const ROW_HEIGHT = CARD_HEIGHT + CARD_GAP
+
+/**
+ * Columnas por ancho de ventana (ADR-0005).
+ *
+ * Se calcula en JS y no solo en CSS porque `useVirtualList` necesita el número:
+ * con 3 columnas, 1351 Pokémon son 451 filas, no 1351. Si el CSS supiera de
+ * columnas y el cálculo no, los offsets quedarían mal.
+ */
+const BREAKPOINTS: Array<{ min: number; columns: number }> = [
+  { min: 1200, columns: 3 },
+  { min: 800, columns: 2 },
+  { min: 0, columns: 1 },
+]
+
+const viewportWidth = ref(typeof window === 'undefined' ? 0 : window.innerWidth)
+
+function measureWidth(): void {
+  viewportWidth.value = window.innerWidth
+}
+
+onMounted(() => window.addEventListener('resize', measureWidth))
+onBeforeUnmount(() => window.removeEventListener('resize', measureWidth))
+
+const columns = computed(
+  () => BREAKPOINTS.find((bp) => viewportWidth.value >= bp.min)?.columns ?? 1,
+)
 
 const store = usePokemonStore()
 const { list, isLoadingList, error } = storeToRefs(store)
+
+/**
+ * El índice de tipos: sin él las tarjetas no tienen color ni chips (ADR-0007).
+ *
+ * Se pide en paralelo con el listado y no después: son dos requests
+ * independientes, y encadenarlas duplicaría el tiempo de arranque por nada.
+ */
+const types = useTypesStore()
+types.load()
 
 /**
  * La búsqueda se apoya en la lista del store, y el virtual scroll en el
@@ -42,7 +101,6 @@ const { list, isLoadingList, error } = storeToRefs(store)
 const { query, results, isEmpty } = useSearch(list)
 
 const favorites = useFavoritesStore()
-const showOnlyFavorites = ref(false)
 
 /**
  * Último eslabón de la cadena: lista → búsqueda → favoritos → virtual scroll.
@@ -52,17 +110,18 @@ const showOnlyFavorites = ref(false)
  * duplica la entidad Pokémon en ningún lado (F7).
  */
 const visible = computed(() =>
-  showOnlyFavorites.value
+  props.onlyFavorites
     ? results.value.filter((pokemon) => favorites.isFavorite(pokemon.name))
     : results.value,
 )
 
 const { containerRef, visibleItems, totalHeight, offsetY } = useVirtualList(visible, {
   itemHeight: ROW_HEIGHT,
+  itemsPerRow: columns,
 })
 
-/** true solo si el usuario pidió favoritos y no tiene ninguno. */
-const hasNoFavorites = computed(() => showOnlyFavorites.value && favorites.count === 0)
+/** true solo si el usuario está en favoritos y no marcó ninguno. */
+const hasNoFavorites = computed(() => props.onlyFavorites && favorites.count === 0)
 
 /**
  * Volver arriba al cambiar el resultado. Sin esto, buscar con el scroll a la
@@ -83,7 +142,14 @@ store.loadList()
 </script>
 
 <template>
-  <main class="list-view" :style="{ '--row-height': `${ROW_HEIGHT}px` }">
+  <main
+    class="list-view"
+    :style="{
+      '--row-height': `${CARD_HEIGHT}px`,
+      '--row-gap': `${CARD_GAP}px`,
+      '--columns': columns,
+    }"
+  >
     <h1 class="list-view__title">Pokédex</h1>
 
     <SearchInput
@@ -93,31 +159,7 @@ store.loadList()
       placeholder="Buscar"
     />
 
-    <!--
-      Dos botones con `aria-pressed` y no un checkbox: son dos vistas excluyentes
-      del mismo listado, y así el estado activo se anuncia sin necesitar texto
-      extra que lo explique.
-    -->
-    <div class="list-view__tabs">
-      <button
-        type="button"
-        class="list-view__tab"
-        :class="{ 'list-view__tab--active': !showOnlyFavorites }"
-        :aria-pressed="!showOnlyFavorites"
-        @click="showOnlyFavorites = false"
-      >
-        Todos
-      </button>
-      <button
-        type="button"
-        class="list-view__tab"
-        :class="{ 'list-view__tab--active': showOnlyFavorites }"
-        :aria-pressed="showOnlyFavorites"
-        @click="showOnlyFavorites = true"
-      >
-        Favoritos
-      </button>
-    </div>
+    <AppNav class="list-view__nav" :items="NAV_ITEMS" />
 
     <!--
       El contenedor se renderiza siempre, también mientras carga: es el elemento
@@ -134,13 +176,19 @@ store.loadList()
 
       <!-- "No tenés favoritos" antes que "no hay resultados": si la lista está
            vacía porque nunca marcaste nada, decir "no encontramos" sería mentir. -->
-      <p v-else-if="hasNoFavorites" class="list-view__status" role="status">
-        Todavía no marcaste ningún Pokémon como favorito.
-      </p>
+      <EmptyState
+        v-else-if="hasNoFavorites"
+        role="status"
+        title="No has marcado ningún Pokémon como favorito"
+        description="Haz clic en el ícono de corazón de tus Pokémon favoritos y aparecerán aquí."
+      />
 
-      <p v-else-if="isEmpty || !visible.length" class="list-view__status" role="status">
-        No encontramos ningún Pokémon con ese nombre.
-      </p>
+      <EmptyState
+        v-else-if="isEmpty || !visible.length"
+        role="status"
+        title="No encontramos ningún Pokémon con ese nombre"
+        description="Revisa que esté bien escrito o prueba con otro nombre."
+      />
 
       <!--
         El sizer tiene el alto de la lista COMPLETA aunque solo se pinte la
@@ -164,8 +212,11 @@ store.loadList()
               class="list-view__link"
               :to="{ name: 'detail', params: { name: item.name } }"
             >
-              <PokemonRow
+              <PokemonCard
+                :id="item.id"
                 :name="item.name"
+                :types="types.typesOf(item.id)"
+                :image-url="spriteUrl(item.id)"
                 :aria-posinset="index + 1"
                 :aria-setsize="visible.length"
               />
@@ -189,13 +240,8 @@ store.loadList()
 
 .list-view {
   max-width: var(--content-max-width);
-  margin: 0 auto;
   padding: var(--sp-4);
-
-  // El layout desktop se decide en ADR-0005, con el Figma a la vista.
-  @include desktop {
-    // TODO
-  }
+  margin: 0 auto;
 
   &__title {
     font-size: var(--fs-title);
@@ -206,10 +252,12 @@ store.loadList()
   }
 
   &__viewport {
-    height: 70vh;
+    // Lo que queda de alto después del título, el buscador y las pestañas.
+    height: calc(100vh - 260px);
+    min-height: 320px;
+    // Sin fondo ni borde: en el Figma las tarjetas flotan sobre el fondo de la
+    // página, no viven dentro de un panel.
     overflow-y: auto;
-    background-color: var(--c-bg);
-    border-radius: var(--radius-card);
 
     // Aísla el layout y el pintado del resto de la página. `size` queda fuera a
     // propósito: el sizer de adentro es quien define el recorrido del scroll.
@@ -224,38 +272,24 @@ store.loadList()
     position: absolute;
     inset-inline: 0;
     top: 0;
+    display: grid;
+    // El número lo pone el script, que es quien también se lo pasa a
+    // `useVirtualList`. Una sola fuente para el CSS y para el cálculo.
+    grid-template-columns: repeat(var(--columns), 1fr);
+    gap: var(--row-gap);
     padding: 0;
     margin: 0;
     list-style: none;
   }
 
-  &__tabs {
-    display: flex;
-    gap: var(--sp-2);
+  &__nav {
     margin-bottom: var(--sp-4);
-  }
-
-  &__tab {
-    padding: var(--sp-2) var(--sp-6);
-    color: var(--c-text-muted);
-    background-color: var(--c-bg);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-pill);
-
-    &--active {
-      color: var(--c-bg);
-      background-color: var(--c-tab-active);
-      border-color: var(--c-tab-active);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--c-tab-active);
-      outline-offset: 2px;
-    }
   }
 
   &__item {
     position: relative;
+    // Sin `margin`: ahora la separación la da el `gap` de la grilla, que es
+    // exactamente el mismo valor que suma el paso de `useVirtualList`.
   }
 
   &__link {
@@ -272,9 +306,8 @@ store.loadList()
   /* Encima del link, no adentro: son hermanos en el DOM y se superponen acá. */
   &__star {
     position: absolute;
-    top: 50%;
-    right: var(--sp-4);
-    transform: translateY(-50%);
+    top: var(--sp-2);
+    right: var(--sp-2);
   }
 
   &__status {

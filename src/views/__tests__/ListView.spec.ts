@@ -21,6 +21,7 @@ import {
   makeListItems,
   makeTestRouter,
   stubViewportHeight,
+  stubViewportWidth,
 } from '@/__tests__/fixtures'
 
 const { fetchPokemonListMock } = vi.hoisted(() => ({ fetchPokemonListMock: vi.fn() }))
@@ -30,11 +31,27 @@ vi.mock('@/api/pokeApi', async (importOriginal) => ({
   fetchPokemonList: fetchPokemonListMock,
 }))
 
-function mountView() {
+/**
+ * `onlyFavorites` llega por props porque favoritos es una ruta propia
+ * (`/favoritos`) y no un estado interno de la pantalla.
+ */
+function mountView(props: { onlyFavorites?: boolean } = {}) {
   return mount(ListView, {
+    props,
     attachTo: document.body,
     global: { plugins: [makeTestRouter()] },
   })
+}
+
+/**
+ * Nombres de las tarjetas visibles.
+ *
+ * Se lee el elemento del nombre y no el texto de la tarjeta entera: la tarjeta
+ * también muestra el número y los chips de tipo, así que comparar contra
+ * `.text()` mezclaría todo.
+ */
+function cardNames(wrapper: ReturnType<typeof mountView>): string[] {
+  return wrapper.findAll('.pokemon-card__name').map((el) => el.text())
 }
 
 /** Escribe en el input y deja pasar la ventana de debounce. */
@@ -51,6 +68,7 @@ beforeEach(() => {
   fetchPokemonListMock.mockReset()
   fetchPokemonListMock.mockResolvedValue(makeListItems(TOTAL_POKEMON))
   stubViewportHeight()
+  stubViewportWidth(1024)
 })
 
 describe('ListView', () => {
@@ -75,27 +93,47 @@ describe('ListView', () => {
     expect(wrapper.find('[role="status"]').exists()).toBe(false)
   })
 
-  it('con 1351 Pokémon deja menos de 30 filas en el DOM (E7)', async () => {
-    const wrapper = mountView()
-    await flushPromises()
+  /**
+   * La evidencia de E7, medida en los dos layouts.
+   *
+   * Con la grilla de ADR-0005 el número **cambia con las columnas**: una fila de
+   * escritorio son 3 tarjetas, así que cada unidad de overscan cuesta 3 nodos y
+   * no 1. Medir solo en una columna y dar el número por válido para desktop sería
+   * exactamente la afirmación sin respaldo que este proyecto evita.
+   */
+  describe.each([
+    { ancho: 500, columnas: 1, tope: 20 },
+    { ancho: 1000, columnas: 2, tope: 40 },
+    { ancho: 1440, columnas: 3, tope: 60 },
+  ])('con 1351 Pokémon y $columnas columna(s) (E7)', ({ ancho, columnas, tope }) => {
+    it(`deja menos de ${tope} tarjetas en el DOM`, async () => {
+      stubViewportWidth(ancho)
+      const wrapper = mountView()
+      await flushPromises()
 
-    const rows = wrapper.findAll('.pokemon-row')
-    expect(rows.length).toBeGreaterThan(0)
-    expect(rows.length).toBeLessThan(30)
+      const cards = wrapper.findAll('.pokemon-card')
+      expect(cards.length).toBeGreaterThan(0)
+      expect(cards.length).toBeLessThan(tope)
+      // Lo que importa no es el número exacto sino el orden de magnitud: son
+      // decenas contra 1351, y sigue siendo múltiplo de las columnas.
+      expect(cards.length % columnas).toBe(0)
+    })
   })
 
   it('expone el tamaño real de la lista a lectores de pantalla', async () => {
     const wrapper = mountView()
     await flushPromises()
 
-    expect(wrapper.find('.pokemon-row').attributes('aria-setsize')).toBe(String(TOTAL_POKEMON))
+    expect(wrapper.find('.pokemon-card').attributes('aria-setsize')).toBe(String(TOTAL_POKEMON))
   })
 
   it('cada fila enlaza al detalle de ese Pokémon (F4)', async () => {
     const wrapper = mountView()
     await flushPromises()
 
-    expect(wrapper.find('a').attributes('href')).toBe('/pokemon/pokemon-0')
+    // Se apunta al link de la tarjeta: `find('a')` traería el de la barra de
+    // navegación, que ahora también es un <a> y aparece antes en el DOM.
+    expect(wrapper.find('.list-view__link').attributes('href')).toBe('/pokemon/pokemon-0')
   })
 
   describe('búsqueda (F8)', () => {
@@ -107,7 +145,7 @@ describe('ListView', () => {
       // (buscar "pokemon-42" matchea también 420…429, y está bien que así sea).
       await search(wrapper, `pokemon-${TOTAL_POKEMON - 1}`)
 
-      expect(wrapper.findAll('.pokemon-row')).toHaveLength(1)
+      expect(wrapper.findAll('.pokemon-card')).toHaveLength(1)
       expect(wrapper.text()).toContain(`pokemon-${TOTAL_POKEMON - 1}`)
       // Lo que sostiene F3: buscar no vuelve a la API.
       expect(fetchPokemonListMock).toHaveBeenCalledTimes(1)
@@ -119,7 +157,7 @@ describe('ListView', () => {
 
       await search(wrapper, 'no-existe-este-pokemon')
 
-      expect(wrapper.findAll('.pokemon-row')).toHaveLength(0)
+      expect(wrapper.findAll('.pokemon-card')).toHaveLength(0)
       expect(wrapper.text()).toContain('No encontramos')
     })
 
@@ -130,7 +168,7 @@ describe('ListView', () => {
       await search(wrapper, `pokemon-${TOTAL_POKEMON - 1}`)
       await search(wrapper, '')
 
-      expect(wrapper.find('.pokemon-row').attributes('aria-setsize')).toBe(String(TOTAL_POKEMON))
+      expect(wrapper.find('.pokemon-card').attributes('aria-setsize')).toBe(String(TOTAL_POKEMON))
     })
 
     it('vuelve al principio de la lista al filtrar desde abajo', async () => {
@@ -144,7 +182,7 @@ describe('ListView', () => {
       await search(wrapper, 'pokemon-1')
 
       expect(viewport.scrollTop).toBe(0)
-      expect(wrapper.find('.pokemon-row').text()).toBe('pokemon-1')
+      expect(cardNames(wrapper)[0]).toBe('pokemon-1')
     })
   })
 
@@ -152,10 +190,6 @@ describe('ListView', () => {
     /** Marca como favorito el enésimo Pokémon visible. */
     async function star(wrapper: ReturnType<typeof mountView>, index = 0) {
       await wrapper.findAll('.favorite-star')[index]!.trigger('click')
-    }
-
-    async function showFavorites(wrapper: ReturnType<typeof mountView>) {
-      await wrapper.findAll('.list-view__tab')[1]!.trigger('click')
     }
 
     it('cada fila ofrece marcar favorito', async () => {
@@ -169,52 +203,52 @@ describe('ListView', () => {
       expect(wrapper.find('.favorite-star').attributes('aria-pressed')).toBe('true')
     })
 
-    it('la pestaña Favoritos filtra a lo marcado', async () => {
-      const wrapper = mountView()
+    it('la vista de favoritos muestra solo lo marcado', async () => {
+      const lista = mountView()
+      await flushPromises()
+      await star(lista, 0)
+      await star(lista, 2)
+
+      // Misma vista, otra ruta: el store de favoritos es compartido.
+      const favoritos = mountView({ onlyFavorites: true })
       await flushPromises()
 
-      await star(wrapper, 0)
-      await star(wrapper, 2)
-      await showFavorites(wrapper)
-
-      const rows = wrapper.findAll('.pokemon-row')
-      expect(rows).toHaveLength(2)
-      expect(rows.map((r) => r.text())).toEqual(['pokemon-0', 'pokemon-2'])
+      expect(cardNames(favoritos)).toEqual(['pokemon-0', 'pokemon-2'])
     })
 
     it('sin favoritos muestra un mensaje propio, no "no encontramos"', async () => {
-      const wrapper = mountView()
+      const wrapper = mountView({ onlyFavorites: true })
       await flushPromises()
 
-      await showFavorites(wrapper)
-
-      expect(wrapper.text()).toContain('Todavía no marcaste')
+      expect(wrapper.text()).toContain('No has marcado')
       expect(wrapper.text()).not.toContain('No encontramos')
     })
 
     it('desmarcar saca al Pokémon de la vista de favoritos', async () => {
-      const wrapper = mountView()
+      const lista = mountView()
       await flushPromises()
+      await star(lista, 0)
 
-      await star(wrapper, 0)
-      await showFavorites(wrapper)
-      expect(wrapper.findAll('.pokemon-row')).toHaveLength(1)
+      const favoritos = mountView({ onlyFavorites: true })
+      await flushPromises()
+      expect(favoritos.findAll('.pokemon-card')).toHaveLength(1)
 
-      await star(wrapper, 0)
+      await star(favoritos, 0)
 
-      expect(wrapper.findAll('.pokemon-row')).toHaveLength(0)
+      expect(favoritos.findAll('.pokemon-card')).toHaveLength(0)
     })
 
     it('se puede buscar dentro de favoritos', async () => {
-      const wrapper = mountView()
+      const lista = mountView()
       await flushPromises()
+      await star(lista, 0) // pokemon-0
+      await star(lista, 1) // pokemon-1
 
-      await star(wrapper, 0) // pokemon-0
-      await star(wrapper, 1) // pokemon-1
-      await showFavorites(wrapper)
-      await search(wrapper, 'pokemon-1')
+      const favoritos = mountView({ onlyFavorites: true })
+      await flushPromises()
+      await search(favoritos, 'pokemon-1')
 
-      expect(wrapper.findAll('.pokemon-row').map((r) => r.text())).toEqual(['pokemon-1'])
+      expect(cardNames(favoritos)).toEqual(['pokemon-1'])
     })
 
     it('marcar favorito no dispara ninguna request', async () => {

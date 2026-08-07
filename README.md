@@ -86,7 +86,7 @@ la API de verdad:
 |---|---|
 | Pokémon en el catálogo (`count`) | **1351** |
 | Listado completo (`?limit=2000`) | **91 KB**, ~190 ms, **una sola request** |
-| Filas en el DOM con la lista completa | **< 30** (vs. 1351 con un `v-for` plano) |
+| Tarjetas en el DOM con la lista completa | **10** a 1 columna · **20** a 2 · **36** a 3 (vs. 1351 con un `v-for` plano) |
 | INP al scrollear (DevTools Performance) | **6 ms** — el umbral "bueno" de Google es 200 ms |
 | CLS | **0** |
 | Filtrar con índice precomputado | **0.108 ms** por tecla |
