@@ -5,7 +5,8 @@
  * El Figma la dibuja como barra inferior, que es un patrón de pulgar: en un
  * teléfono el dedo llega abajo y no arriba. En escritorio no hay pulgar, hay
  * puntero, y una barra pegada al borde inferior de una ventana de 1440 px queda
- * lejos de todo. Por eso **sube arriba en desktop y se queda abajo en mobile**.
+ * lejos de todo. Por eso sube arriba, y comparte fila con el buscador para no
+ * gastar una banda entera de altura en dos controles que entran en una.
  *
  * Presentación pura salvo por `RouterLink`, que no es dato ni estado: es la
  * navegación misma. Lo que no hace es decidir a dónde va — las rutas llegan por
@@ -74,49 +75,24 @@ const icons = ICONS
 @use '@/styles/mixins' as *;
 
 .app-nav {
-  position: sticky;
-  // Abajo en mobile, siguiendo el Figma.
-  bottom: 0;
-  z-index: 1;
-  background-color: var(--c-bg);
-  border-top: var(--border-width) solid var(--c-border);
-
-  @include tablet {
-    position: static;
-    border-top: 0;
-    border-bottom: var(--border-width) solid var(--c-border);
-  }
-
   &__list {
     display: flex;
     gap: var(--sp-2);
-    justify-content: space-around;
     padding: 0;
     margin: 0;
     list-style: none;
-
-    @include tablet {
-      // En escritorio no hay que repartir el ancho entre pulgares: los ítems se
-      // agrupan a la izquierda y se leen como una barra de navegación.
-      justify-content: flex-start;
-      padding: 0 var(--sp-4);
-    }
   }
 
   &__item {
     display: flex;
-    flex-direction: column;
-    gap: var(--sp-1);
+    gap: var(--sp-2);
     align-items: center;
     padding: var(--sp-3) var(--sp-4);
     font-size: var(--fs-body);
     color: var(--c-text-muted);
     text-decoration: none;
-
-    @include tablet {
-      flex-direction: row;
-      gap: var(--sp-2);
-    }
+    white-space: nowrap;
+    border-radius: var(--radius-pill);
 
     &--active {
       font-weight: 600;

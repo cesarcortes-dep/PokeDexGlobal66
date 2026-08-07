@@ -137,6 +137,10 @@ function detailResponse(overrides: Partial<PokemonDetailResponse> = {}): Pokemon
     weight: 60, // hectogramos → 6 kg
     height: 4, // decímetros → 0.4 m
     types: [{ slot: 1, type: { name: 'electric' } }],
+    abilities: [
+      { ability: { name: 'static' }, is_hidden: false, slot: 1 },
+      { ability: { name: 'lightning-rod' }, is_hidden: true, slot: 3 },
+    ],
     sprites: {
       other: { 'official-artwork': { front_default: 'https://img/artwork.png' } },
       front_default: 'https://img/sprite.png',
@@ -256,6 +260,26 @@ describe('toPokemon', () => {
     expect(toPokemon(raw).imageUrl).toBe('https://img/sprite.png')
   })
 
+  it('elige la habilidad no oculta de menor slot', () => {
+    const raw = detailResponse({
+      abilities: [
+        { ability: { name: 'lightning-rod' }, is_hidden: true, slot: 3 },
+        { ability: { name: 'run-away' }, is_hidden: false, slot: 2 },
+        { ability: { name: 'static' }, is_hidden: false, slot: 1 },
+      ],
+    })
+
+    expect(toPokemon(raw).ability).toBe('static')
+  })
+
+  it('devuelve null si todas las habilidades son ocultas', () => {
+    const raw = detailResponse({
+      abilities: [{ ability: { name: 'lightning-rod' }, is_hidden: true, slot: 3 }],
+    })
+
+    expect(toPokemon(raw).ability).toBeNull()
+  })
+
   it('devuelve null si no hay ninguna imagen', () => {
     const raw = detailResponse({ sprites: { front_default: null } })
 
@@ -277,6 +301,7 @@ describe('fetchPokemonByName', () => {
       weight: 6,
       types: ['electric'],
       imageUrl: 'https://img/artwork.png',
+      ability: 'static',
     })
     expect(pokemon).not.toHaveProperty('sprites')
   })

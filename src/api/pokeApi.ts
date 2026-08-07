@@ -171,6 +171,13 @@ export function toPokemon(raw: PokemonDetailResponse): Pokemon {
     // El artwork oficial es el grande del Figma; `front_default` es el sprite
     // chico de 96px. Se cae al segundo porque no todas las formas tienen artwork.
     imageUrl: raw.sprites.other?.['official-artwork']?.front_default ?? raw.sprites.front_default,
+    // La habilidad visible es la primera no oculta. Las `is_hidden` son las que
+    // en el juego solo aparecen en encuentros especiales, y el Figma no las
+    // distingue: mostrarlas confundiría más de lo que aporta.
+    ability:
+      [...raw.abilities]
+        .filter((entry) => !entry.is_hidden)
+        .sort((a, b) => a.slot - b.slot)[0]?.ability.name ?? null,
   }
 }
 

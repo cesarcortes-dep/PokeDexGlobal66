@@ -152,14 +152,20 @@ store.loadList()
   >
     <h1 class="list-view__title">Pokédex</h1>
 
-    <SearchInput
-      v-model="query"
-      class="list-view__search"
-      label="Buscar Pokémon por nombre"
-      placeholder="Buscar"
-    />
+    <!--
+      Buscador y navegación comparten una fila: en escritorio hay ancho de sobra
+      y separarlos en dos bandas desperdiciaba altura de la lista.
+    -->
+    <header class="list-view__header">
+      <SearchInput
+        v-model="query"
+        class="list-view__search"
+        label="Buscar Pokémon por nombre"
+        placeholder="Buscar"
+      />
 
-    <AppNav class="list-view__nav" :items="NAV_ITEMS" />
+      <AppNav :items="NAV_ITEMS" />
+    </header>
 
     <!--
       El contenedor se renderiza siempre, también mientras carga: es el elemento
@@ -210,7 +216,11 @@ store.loadList()
             -->
             <RouterLink
               class="list-view__link"
-              :to="{ name: 'detail', params: { name: item.name } }"
+              :to="{
+                name: 'detail',
+                params: { name: item.name },
+                query: { desde: onlyFavorites ? 'favoritos' : undefined },
+              }"
             >
               <PokemonCard
                 :id="item.id"

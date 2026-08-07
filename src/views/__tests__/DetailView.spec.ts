@@ -25,9 +25,9 @@ vi.mock('@/api/pokeApi', async (importOriginal) => ({
   fetchPokemonByName: fetchPokemonByNameMock,
 }))
 
-async function mountDetail(name = 'pikachu') {
+async function mountDetail(name = 'pikachu', query: Record<string, string> = {}) {
   const router = makeTestRouter()
-  await router.push({ name: 'detail', params: { name } })
+  await router.push({ name: 'detail', params: { name }, query })
   await router.isReady()
 
   const wrapper = mount(DetailView, {
@@ -60,7 +60,42 @@ describe('DetailView', () => {
     expect(wrapper.text()).toContain('pikachu')
     expect(wrapper.text()).toContain('6 kg')
     expect(wrapper.text()).toContain('0.4 m')
-    expect(wrapper.text()).toContain('electric')
+    // El chip muestra la etiqueta en español del Figma, no el nombre de la API.
+    expect(wrapper.text()).toContain('Eléctrico')
+  })
+
+  it('muestra la habilidad', async () => {
+    const { wrapper } = await mountDetail()
+
+    expect(wrapper.text()).toContain('HABILIDAD')
+    expect(wrapper.text()).toContain('static')
+  })
+
+  describe('compartir (F6)', () => {
+    it('copia nombre y atributos separados por coma', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      vi.stubGlobal('navigator', { clipboard: { writeText } })
+
+      const { wrapper } = await mountDetail()
+      await wrapper.find('.detail-view__share').trigger('click')
+
+      // Valores ya formateados: pegado en un chat, "6 kg" se entiende y "60" no.
+      expect(writeText).toHaveBeenCalledWith('pikachu,6 kg,0.4 m,electric')
+      vi.unstubAllGlobals()
+    })
+
+    it('confirma al usuario que copió', async () => {
+      vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } })
+
+      const { wrapper } = await mountDetail()
+      expect(wrapper.find('.detail-view__share').text()).toBe('Copiar atributos')
+
+      await wrapper.find('.detail-view__share').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.detail-view__share').text()).toContain('Copiado')
+      vi.unstubAllGlobals()
+    })
   })
 
   it('usa el nombre como texto alternativo de la imagen', async () => {
@@ -113,10 +148,20 @@ describe('DetailView', () => {
     expect(wrapper.find('[role="alert"]').text()).toContain('conexión')
   })
 
-  it('ofrece volver al listado', async () => {
-    const { wrapper } = await mountDetail()
+  describe('volver', () => {
+    it('vuelve al listado por defecto', async () => {
+      const { wrapper } = await mountDetail()
 
-    expect(wrapper.find('a').attributes('href')).toBe('/')
+      expect(wrapper.find('.detail-view__back').attributes('href')).toBe('/')
+    })
+
+    it('vuelve a favoritos si vino de ahí', async () => {
+      // El origen viaja en la query y no en el historial: si alguien abre la URL
+      // del detalle directo, `router.back()` lo sacaría de la aplicación.
+      const { wrapper } = await mountDetail('pikachu', { desde: 'favoritos' })
+
+      expect(wrapper.find('.detail-view__back').attributes('href')).toBe('/favoritos')
+    })
   })
 
   describe('favoritos (F1)', () => {

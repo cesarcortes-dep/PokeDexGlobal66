@@ -782,3 +782,51 @@ tokens, iconos y los datos que el diseño vuelve obligatorios.
 
 **Siguiente:** maquetar la tarjeta de la lista con todo esto junto. Ahí entra
 `ROW_HEIGHT = 102` con gap de 12.
+
+---
+
+## 2026-08-07 — La lista, en desktop y con el diseño real
+
+**Contexto:** con tokens, iconos y datos ya resueltos, tocaba maquetar. Y apareció un
+error de rumbo propio que costó rehacer trabajo.
+
+**Hecho:**
+- `PokemonCard` reemplaza a `PokemonRow`: número, nombre, chips, sprite y color por
+  tipo. `EmptyState` con ilustración para los dos casos vacíos. `AppNav` con dos
+  pestañas. Favoritos pasa a ser la ruta `/favoritos`.
+- `useVirtualList` virtualiza **filas** y no ítems: con 3 columnas, 1351 Pokémon son
+  451 filas.
+- Poppins auto-hospedada con `@fontsource`.
+- **[ADR-0005](./decisions/ADR-0005-layout-desktop.md)**, que llevaba reservado desde
+  el 2026-08-04: grilla de 1/2/3 columnas, no columna mobile estirada.
+- **E5 → `[x]`**: primera corrida verde en GitHub Actions, 109 tests en 48 s.
+
+**Aprendido / fricción:**
+- **El error grande fue anclar todo a 328 px.** Ese número salió del panel de Layout
+  del Figma, pero es el ancho **mobile de referencia**; el entregable es desktop/web.
+  El resultado era una columna de teléfono centrada en una ventana de 1440 —
+  exactamente lo que D2 llama "mobile estirado" y lo que ADR-0002 había decidido no
+  hacer meses antes. Lo detectó el usuario mirando la pantalla, no yo leyendo el
+  código. Leer la medida correcta del lugar correcto no alcanza si no se piensa para
+  qué formato es.
+- **Tres bugs de maqueta, y ninguno era lo que parecía.** El más ilustrativo: la `g`
+  de "Pidgeot" se cortaba y la reacción natural era subir el alto de la tarjeta. La
+  causa real era `line-height: 100%` —valor del Figma— combinado con el
+  `overflow: hidden` que necesita el truncado con elipsis: el descendente cae fuera de
+  la caja de línea. Subir la tarjeta no habría arreglado nada. Un token de diseño que
+  no sobrevive al contacto con el truncado.
+- **`preserveAspectRatio="slice"`** escalaba la forma del tipo hasta cubrir su
+  recuadro, y un icono angosto como la gota de `water` se desbordaba sobre el nombre.
+- **El fondo de tarjeta resultó ser una regla, no una lista.** El Figma daba
+  `#RRGGBB80` por tipo: el mismo color del chip al 50%. Guardar 18 valores habría
+  creado 18 pares que se pueden desincronizar.
+- **Un `<a>` de más rompió un test.** Al sumar la barra de navegación, el test de F4
+  que buscaba el primer enlace de la página empezó a encontrar el de la nav. Buena
+  señal de que los selectores de test conviene atarlos a la clase del componente y no
+  a la posición en el DOM.
+
+**Pendiente conocido:** `src/assets/magikarp.svg` es un placeholder hasta que entre el
+export real del Figma.
+
+**Siguiente:** la pantalla de detalle, con el botón de compartir (F6) que el Figma no
+contempla y hay que diseñar.

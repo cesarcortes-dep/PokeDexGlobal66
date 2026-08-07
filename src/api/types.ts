@@ -45,6 +45,8 @@ export interface PokemonDetailResponse {
   /** Decímetros. Dividir por 10 para metros. */
   height: number
   types: Array<{ slot: number; type: { name: string } }>
+  /** El Figma muestra una sola habilidad; `is_hidden` marca las secundarias. */
+  abilities: Array<{ ability: { name: string }; is_hidden: boolean; slot: number }>
   sprites: {
     other?: {
       'official-artwork'?: { front_default: string | null }
@@ -99,4 +101,9 @@ export interface Pokemon {
   weight: number
   types: string[]
   imageUrl: string | null
+  /**
+   * Habilidad principal, ya en singular. El Figma muestra una sola, así que el
+   * mapper elige la no oculta de menor `slot` en vez de hacer que la UI decida.
+   */
+  ability: string | null
 }

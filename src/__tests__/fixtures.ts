@@ -28,6 +28,7 @@ export const PIKACHU: Pokemon = {
   weight: 6,
   types: ['electric'],
   imageUrl: 'https://img/artwork.png',
+  ability: 'static',
 }
 
 /** Ítems de listado con nombres predecibles: `pokemon-0`, `pokemon-1`, … */
