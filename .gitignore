@@ -40,3 +40,7 @@ __screenshots__/
 
 # Preparacion personal, no forma parte del proyecto
 docs/_privado/
+
+# Material de trabajo, no entregable. El entregable es README.md.
+# Se conservan en disco; volver a subirlos es revertir esta linea.
+docs/
