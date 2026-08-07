@@ -64,7 +64,7 @@ export async function request<T>(path: string): Promise<T> {
 }
 
 /**
- * Listado completo en UNA request (ADR-0004, F3).
+ * Listado completo en UNA request (README: escala, F3).
  *
  * OJO: sin `limit` la API devuelve 20. Hay que pedir el universo entero para que
  * la búsqueda no dé falsos negativos.
@@ -92,7 +92,7 @@ export async function fetchPokemonList(): Promise<PokemonListItem[]> {
 const REAL_TYPE_COUNT = 18
 
 /**
- * Índice de tipos (ADR-0007).
+ * Índice de tipos (README: el conflicto grande).
  *
  * `GET /pokemon` no devuelve tipos, y el Figma pinta cada fila con el color de su
  * tipo primario. Pedir el detalle de cada Pokémon costaría 271 KB por fila; estos
@@ -135,7 +135,7 @@ export async function fetchTypeIndex(): Promise<TypeIndex> {
 }
 
 /**
- * URL del sprite a partir del id, sin gastar una llamada a la API (ADR-0007).
+ * URL del sprite a partir del id, sin gastar una llamada a la API (README: el conflicto grande).
  *
  * PokéAPI sirve los sprites desde una ruta predecible en GitHub, así que el
  * `id` que ya se extrajo del listado alcanza. Es una request de imagen, no de
@@ -175,9 +175,8 @@ export function toPokemon(raw: PokemonDetailResponse): Pokemon {
     // en el juego solo aparecen en encuentros especiales, y el Figma no las
     // distingue: mostrarlas confundiría más de lo que aporta.
     ability:
-      [...raw.abilities]
-        .filter((entry) => !entry.is_hidden)
-        .sort((a, b) => a.slot - b.slot)[0]?.ability.name ?? null,
+      [...raw.abilities].filter((entry) => !entry.is_hidden).sort((a, b) => a.slot - b.slot)[0]
+        ?.ability.name ?? null,
   }
 }
 

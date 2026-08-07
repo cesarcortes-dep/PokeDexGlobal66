@@ -42,7 +42,7 @@ const NAV_ITEMS = [
  * Geometría de la lista. El paso del virtual scroll es alto + separación.
  *
  * Los 102 px del Figma son la medida **mobile de referencia**; el entregable es
- * desktop/web (ADR-0005), así que la tarjeta crece para que los nombres largos
+ * desktop/web (README: adaptación a desktop), así que la tarjeta crece para que los nombres largos
  * entren sin truncar y el sprite respire.
  *
  * Lo define TypeScript y el CSS lo recibe como custom property, no al revés:
@@ -55,7 +55,7 @@ const CARD_GAP = 16
 const ROW_HEIGHT = CARD_HEIGHT + CARD_GAP
 
 /**
- * Columnas por ancho de ventana (ADR-0005).
+ * Columnas por ancho de ventana (README: adaptación a desktop).
  *
  * Se calcula en JS y no solo en CSS porque `useVirtualList` necesita el número:
  * con 3 columnas, 1351 Pokémon son 451 filas, no 1351. Si el CSS supiera de
@@ -130,7 +130,7 @@ const loaderMinMs = readLoaderOverride() ?? LOADER_MIN_MS
 const showLoader = useMinimumDuration(isLoadingList, loaderMinMs)
 
 /**
- * El índice de tipos: sin él las tarjetas no tienen color ni chips (ADR-0007).
+ * El índice de tipos: sin él las tarjetas no tienen color ni chips (README: el conflicto grande).
  *
  * Se pide en paralelo con el listado y no después: son dos requests
  * independientes, y encadenarlas duplicaría el tiempo de arranque por nada.
@@ -141,7 +141,7 @@ types.load()
 /**
  * La búsqueda se apoya en la lista del store, y el virtual scroll en el
  * resultado de la búsqueda. Encadenados así, filtrar no dispara ninguna request:
- * `results` es un `computed` sobre datos que ya están en memoria (F8, ADR-0004).
+ * `results` es un `computed` sobre datos que ya están en memoria (F8, README: escala).
  */
 const { query, results, isEmpty } = useSearch(list)
 

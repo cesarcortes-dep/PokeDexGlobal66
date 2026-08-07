@@ -1,5 +1,5 @@
 /**
- * Tests del índice de tipos (E5, ADR-0007).
+ * Tests del índice de tipos (E5, README: el conflicto grande).
  *
  * Lo que importa acá no es que guarde un Map: es que **el tipo primario sea el
  * del slot 1** aunque los 18 requests lleguen en cualquier orden. De ese dato

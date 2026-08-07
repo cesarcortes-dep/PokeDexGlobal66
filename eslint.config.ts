@@ -26,7 +26,7 @@ export default defineConfigWithVueTs(
   },
 
   {
-    // La regla que sostiene la arquitectura por capas (ADR-0006).
+    // La regla que sostiene la arquitectura por capas (README: arquitectura).
     //
     // `components/ui/` es presentación pura: recibe props y emite eventos. Si un
     // componente de ahí importa el store o el cliente de API, deja de ser
@@ -51,7 +51,7 @@ export default defineConfigWithVueTs(
               // Los patrones con `**/` cubren además los imports relativos.
               group: ['@/api/pokeApi', '@/stores/*', '**/api/pokeApi', '**/stores/*'],
               message:
-                'components/ui/ es presentación pura: no puede importar el cliente de API ni los stores. Pasá los datos por props y emití eventos. Ver ADR-0006.',
+                'components/ui/ es presentación pura: no puede importar el cliente de API ni los stores. Pasá los datos por props y emití eventos. Ver README: arquitectura.',
             },
           ],
         },

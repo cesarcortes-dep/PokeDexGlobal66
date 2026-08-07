@@ -1,7 +1,7 @@
 /**
  * Tipos de la PokéAPI.
  *
- * Regla (ADR-0003): se tipan SOLO los campos que la app usa, no el schema
+ * Regla (README: stack): se tipan SOLO los campos que la app usa, no el schema
  * completo. Tipar de más es lo contrario de KISS y no aporta nada al evaluador.
  *
  * Contrato real de la API:
@@ -35,7 +35,8 @@ export interface PokemonListItem extends RawListItem {
 
 /**
  * Respuesta cruda del detalle, recortada a lo que se muestra.
- * TODO: confirmar contra el Figma qué atributos aparecen realmente (supuesto S4).
+ * El Figma no incluye el botón de compartir ni dice qué debería copiar, así que
+ * el criterio es propio: se copian los atributos que la pantalla muestra.
  */
 export interface PokemonDetailResponse {
   id: number
@@ -58,7 +59,8 @@ export interface PokemonDetailResponse {
 /**
  * Respuesta de `GET /type/{n}`, recortada a lo que la app usa.
  *
- * Este endpoint entró al alcance por ADR-0007 y resuelve dos cosas de una: los
+ * Este endpoint entró al alcance por el conflicto entre el Figma y los "dos
+ * llamados", y resuelve dos cosas de una: los
  * tipos de todos los Pokémon (que `GET /pokemon` no devuelve) y las debilidades
  * que el detalle muestra.
  */

@@ -1,5 +1,5 @@
 /**
- * Store del índice de tipos (ADR-0007).
+ * Store del índice de tipos (README: el conflicto grande).
  *
  * Existe separado del store `pokemon` porque responde otra pregunta: `pokemon`
  * sabe *qué Pokémon hay*, este sabe *de qué tipo es cada uno*. Se cargan en

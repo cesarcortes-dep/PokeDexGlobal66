@@ -2,7 +2,7 @@
 /**
  * Detalle de un Pokémon (D1, F4, F6).
  *
- * Es una **ruta** y no un modal (ADR-0005): da URL compartible y botón "atrás"
+ * Es una **ruta** y no un modal (README: adaptación a desktop): da URL compartible y botón "atrás"
  * del navegador, y evita mantener dos comportamientos entre mobile y desktop.
  *
  * Qué NO muestra, y es deliberado (supuesto S5): descripción, categoría y ratio
@@ -138,92 +138,97 @@ const shareText = computed(() => {
 
     <div class="detail-view__layout">
       <div class="detail-view__device">
-      <img class="detail-view__frame" :src="pokedexFrame" alt="" aria-hidden="true" />
+        <img class="detail-view__frame" :src="pokedexFrame" alt="" aria-hidden="true" />
 
-      <!--
+        <!--
         La ventana se posiciona en porcentajes del marco, no en píxeles: así el
         sprite sigue apoyado en la pantalla cuando el dibujo escala.
       -->
-      <div class="detail-view__screen">
-        <img
-          v-if="pokemon?.imageUrl"
-          class="detail-view__image"
-          :src="pokemon.imageUrl"
-          :alt="pokemon.name"
-        />
+        <div class="detail-view__screen">
+          <img
+            v-if="pokemon?.imageUrl"
+            class="detail-view__image"
+            :src="pokemon.imageUrl"
+            :alt="pokemon.name"
+          />
+        </div>
       </div>
-      </div>
 
-    <p v-if="isLoading" class="detail-view__status" role="status">Cargando…</p>
+      <p v-if="isLoading" class="detail-view__status" role="status">Cargando…</p>
 
-    <EmptyState v-else-if="error" role="alert" title="No pudimos abrir este Pokémon" :description="error" />
+      <EmptyState
+        v-else-if="error"
+        role="alert"
+        title="No pudimos abrir este Pokémon"
+        :description="error"
+      />
 
-    <article v-else-if="pokemon" class="detail-view__body">
-      <!--
+      <article v-else-if="pokemon" class="detail-view__body">
+        <!--
         La estrella acompaña al nombre: marcar favorito se refiere a este Pokémon
         en particular, y arriba junto a la flecha se leía como una acción de la
         pantalla y no del contenido.
       -->
-      <div class="detail-view__heading">
-        <h1 class="detail-view__name">{{ pokemon.name }}</h1>
+        <div class="detail-view__heading">
+          <h1 class="detail-view__name">{{ pokemon.name }}</h1>
 
-        <FavoriteStar
-          :active="favorites.isFavorite(pokemon.name)"
-          :label="pokemon.name"
-          @toggle="favorites.toggle(pokemon.name)"
-        />
-      </div>
-      <p class="detail-view__number">{{ number }}</p>
+          <FavoriteStar
+            :active="favorites.isFavorite(pokemon.name)"
+            :label="pokemon.name"
+            @toggle="favorites.toggle(pokemon.name)"
+          />
+        </div>
+        <p class="detail-view__number">{{ number }}</p>
 
-      <ul class="detail-view__types">
-        <li v-for="type in pokemon.types" :key="type"><TypeChip :type="type" /></li>
-      </ul>
+        <ul class="detail-view__types">
+          <li v-for="type in pokemon.types" :key="type"><TypeChip :type="type" /></li>
+        </ul>
 
-      <!-- Lista de descripción: cada atributo es un par nombre/valor, y eso es
+        <!-- Lista de descripción: cada atributo es un par nombre/valor, y eso es
            exactamente lo que un <dl> comunica a un lector de pantalla. -->
-      <dl class="detail-view__stats">
-        <div class="detail-view__stat">
-          <dt class="detail-view__stat-label"><AppIcon name="weight" :size="14" /> PESO</dt>
-          <dd class="detail-view__stat-value">{{ pokemon.weight }} kg</dd>
-        </div>
+        <dl class="detail-view__stats">
+          <div class="detail-view__stat">
+            <dt class="detail-view__stat-label"><AppIcon name="weight" :size="14" /> PESO</dt>
+            <dd class="detail-view__stat-value">{{ pokemon.weight }} kg</dd>
+          </div>
 
-        <div class="detail-view__stat">
-          <dt class="detail-view__stat-label"><AppIcon name="height" :size="14" /> ALTURA</dt>
-          <dd class="detail-view__stat-value">{{ pokemon.height }} m</dd>
-        </div>
+          <div class="detail-view__stat">
+            <dt class="detail-view__stat-label"><AppIcon name="height" :size="14" /> ALTURA</dt>
+            <dd class="detail-view__stat-value">{{ pokemon.height }} m</dd>
+          </div>
 
-        <!--
+          <!--
           Ocupa las dos columnas porque CATEGORÍA, que en el Figma iba a su lado,
           queda fuera de alcance (S5): sale de `/pokemon-species`. Dejar el hueco
           se leería como algo que falta cargar.
         -->
-        <div v-if="pokemon.ability" class="detail-view__stat detail-view__stat--wide">
-          <dt class="detail-view__stat-label"><AppIcon name="ability" :size="14" /> HABILIDAD</dt>
-          <dd class="detail-view__stat-value">{{ pokemon.ability }}</dd>
-        </div>
-      </dl>
+          <div v-if="pokemon.ability" class="detail-view__stat detail-view__stat--wide">
+            <dt class="detail-view__stat-label"><AppIcon name="ability" :size="14" /> HABILIDAD</dt>
+            <dd class="detail-view__stat-value">{{ pokemon.ability }}</dd>
+          </div>
+        </dl>
 
-      <section v-if="weaknesses.length" class="detail-view__weaknesses">
-        <h2 class="detail-view__section-title">Debilidades</h2>
-        <ul class="detail-view__types">
-          <li v-for="type in weaknesses" :key="type"><TypeChip :type="type" /></li>
-        </ul>
-      </section>
+        <section v-if="weaknesses.length" class="detail-view__weaknesses">
+          <h2 class="detail-view__section-title">Debilidades</h2>
+          <ul class="detail-view__types">
+            <li v-for="type in weaknesses" :key="type"><TypeChip :type="type" /></li>
+          </ul>
+        </section>
 
-      <!--
+        <!--
         El Figma no incluye este botón, pero F6 lo pide. Se diseña respetando el
         sistema visual existente y queda documentado como desviación consciente.
       -->
-      <button class="detail-view__share" type="button" @click="copy(shareText)">
-        {{ copied ? '¡Copiado!' : 'Copiar atributos' }}
-      </button>
+        <button class="detail-view__share" type="button" @click="copy(shareText)">
+          {{ copied ? '¡Copiado!' : 'Copiar atributos' }}
+        </button>
 
-      <!-- El cambio de texto del botón no lo anuncia un lector de pantalla por
+        <!-- El cambio de texto del botón no lo anuncia un lector de pantalla por
            sí solo: este `role="status"` sí lo hace. -->
-      <span class="detail-view__sr-only" role="status">
-        {{ copied ? 'Atributos copiados al portapapeles' : '' }}
-      </span>
-    </article>
+        <span class="detail-view__sr-only" role="status">
+          {{ copied ? 'Atributos copiados al portapapeles' : '' }}
+        </span>
+      </article>
     </div>
   </main>
 </template>

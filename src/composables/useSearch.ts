@@ -2,7 +2,7 @@
  * Búsqueda por nombre en cliente (F8).
  *
  * Por qué en cliente: PokéAPI no tiene búsqueda por texto parcial y el enunciado
- * acota a dos endpoints. Todo el universo ya está en el store (ADR-0004).
+ * acota a dos endpoints. Todo el universo ya está en el store (README: escala).
  *
  * Claves de rendimiento (E7):
  *  - debounce del input (~200 ms), no filtrar por tecla
@@ -26,11 +26,7 @@ const DEBOUNCE_MS = 200
  * misma búsqueda.
  */
 function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim()
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 }
 
 export interface UseSearchReturn {
@@ -76,7 +72,9 @@ export function useSearch(source: Ref<PokemonListItem[]>): UseSearchReturn {
   })
 
   /** Distingue "no busqué nada todavía" de "busqué y no hay". Solo el segundo es vacío. */
-  const isEmpty = computed(() => normalize(debouncedQuery.value).length > 0 && !results.value.length)
+  const isEmpty = computed(
+    () => normalize(debouncedQuery.value).length > 0 && !results.value.length,
+  )
 
   return { query, results, isEmpty }
 }

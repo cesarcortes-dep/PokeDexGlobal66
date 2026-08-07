@@ -1,7 +1,7 @@
 /**
  * Store del catálogo: la lista completa y el caché de detalles.
  *
- * Fuente única de verdad (ADR-0004). La lista se pide UNA vez y vive acá;
+ * Fuente única de verdad (README: escala). La lista se pide UNA vez y vive acá;
  * búsqueda y filtros son `computed` sobre ella, nunca requests nuevas.
  */
 

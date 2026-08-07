@@ -1,5 +1,5 @@
 /**
- * Virtual scrolling: renderiza solo la ventana visible (E7, ADR-0004).
+ * Virtual scrolling: renderiza solo la ventana visible (E7, README: escala).
  *
  * Es LA respuesta a "pensá en gran cantidad de data". Con ~1350 Pokémon, un
  * `v-for` plano mete 1350 nodos + listeners en el DOM y el scroll se traba.
@@ -13,7 +13,7 @@
  * esta decisión se cae y hay que revisarla.
  *
  * Sirve para una columna y para una grilla: lo que virtualiza son **filas**, y
- * cuántos ítems entran en cada una lo decide quien lo usa (ADR-0005).
+ * cuántos ítems entran en cada una lo decide quien lo usa (README: adaptación a desktop).
  *
  * No sabe qué store existe ni qué renderiza: recibe un `Ref` de items y devuelve
  * geometría. Por eso sirve para cualquier lista y se testea sin montar la app.
@@ -29,7 +29,7 @@ export interface UseVirtualListOptions {
   overscan?: number
   /**
    * Cuántos ítems entran por fila. 1 es una lista clásica; más de 1 es una
-   * grilla (ADR-0005: en desktop la lista pasa a varias columnas).
+   * grilla (README: adaptación a desktop: en desktop la lista pasa a varias columnas).
    *
    * Acepta un ref porque el número de columnas cambia al redimensionar la
    * ventana, y la ventana visible tiene que recalcularse cuando eso pasa.

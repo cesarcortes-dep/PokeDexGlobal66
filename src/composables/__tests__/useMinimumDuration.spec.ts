@@ -28,7 +28,13 @@ function setup(initial: boolean, minMs: number | Ref<number> = MIN_MS) {
 
   const wrapper = mount(Harness)
 
-  return { source, get held() { return held }, wrapper }
+  return {
+    source,
+    get held() {
+      return held
+    },
+    wrapper,
+  }
 }
 
 describe('useMinimumDuration', () => {

@@ -4,8 +4,6 @@
  *
  * Presentación pura: no filtra nada ni sabe qué se está buscando. Recibe el
  * valor y emite el nuevo. Quien decide qué hacer con el texto es la view.
- *
- * TODO: ícono de lupa y maqueta del Figma.
  */
 
 defineProps<{

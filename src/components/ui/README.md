@@ -6,7 +6,7 @@
 
 Reciben `props`, emiten eventos. No saben que existe la PokéAPI ni Pinia. Por eso
 se testean sin montar la app y se pueden reordenar libremente cuando se adapte el
-layout a desktop (ADR-0002).
+layout a desktop.
 
 Candidatos según el Figma:
 
@@ -15,4 +15,3 @@ Candidatos según el Figma:
 - `FavoriteStar.vue` — estrella toggle (activa / inactiva)
 - `PokeballLoader.vue` — el loader animado por CSS de F5
 - `EmptyState.vue` — "no encontramos nada" + botón
-- `AppModal.vue` — si el detalle termina siendo modal (pendiente ADR-0005)

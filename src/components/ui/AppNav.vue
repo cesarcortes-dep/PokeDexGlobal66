@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Navegación principal (D2, ADR-0005).
+ * Navegación principal (D2, README: adaptación a desktop).
  *
  * El Figma la dibuja como barra inferior, que es un patrón de pulgar: en un
  * teléfono el dedo llega abajo y no arriba. En escritorio no hay pulgar, hay

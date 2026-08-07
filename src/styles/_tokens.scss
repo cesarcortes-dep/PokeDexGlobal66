@@ -15,7 +15,7 @@ $bp-wide: 1440px;
 // --- Paleta por tipo -------------------------------------------------------
 //
 // No hay un color primario: la identidad visual de la lista es el color del tipo
-// (ADR-0007). Cada tarjeta se pinta según el tipo en `slot: 1`.
+// (README: el conflicto grande). Cada tarjeta se pinta según el tipo en `slot: 1`.
 //
 // OJO: `normal`, `dark` y `steel` comparten el mismo hex (#546E7A). Está
 // confirmado contra el Figma, no es una variable reusada por error: los tres se
@@ -101,7 +101,7 @@ $type-card-alpha: 0.5;
   // --- Forma -------------------------------------------------------------
   --radius-card: 16px;
   --radius-input: 16px;
-  --radius-pill: 60px; // chips de tipo. TODO: confirmar en el Figma.
+  --radius-pill: 60px; // chips de tipo
   --border-width: 1.5px;
   // Sin sombra en las tarjetas: el Figma no la usa.
 
@@ -114,7 +114,7 @@ $type-card-alpha: 0.5;
   // `--row-gap` tampoco: lo inyecta ListView junto con `--row-height`, porque el
   // paso del virtual scroll es la suma de los dos.
   // Ancho del contenido. Los 328px del Figma son la referencia mobile; el
-  // entregable es desktop (ADR-0005), y la grilla necesita espacio para que las
+  // entregable es desktop (README: adaptación a desktop), y la grilla necesita espacio para que las
   // tarjetas sean grandes de verdad.
   --content-max-width: 1400px;
 }

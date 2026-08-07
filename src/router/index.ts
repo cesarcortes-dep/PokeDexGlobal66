@@ -23,14 +23,15 @@ const router = createRouter({
     },
     {
       // El detalle como ruta da URL compartible y "atrás" del navegador gratis.
-      // Si el Figma lo resuelve como modal, esto cambia (ver ADR-0005 pendiente).
+      // Ruta y no modal: da URL compartible y botón "atrás" en los dos formatos.
       path: '/pokemon/:name',
       name: 'detail',
       component: () => import('@/views/DetailView.vue'),
       props: true,
     },
     {
-      // TODO: 404 propio si el Figma lo contempla.
+      // El Figma no define un 404, así que cualquier ruta desconocida vuelve al
+      // listado en vez de dejar la pantalla en blanco.
       path: '/:pathMatch(.*)*',
       redirect: { name: 'list' },
     },

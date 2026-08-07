@@ -102,7 +102,7 @@ describe('ListView', () => {
   /**
    * La evidencia de E7, medida en los dos layouts.
    *
-   * Con la grilla de ADR-0005 el número **cambia con las columnas**: una fila de
+   * Con la grilla el número **cambia con las columnas**: una fila de
    * escritorio son 3 tarjetas, así que cada unidad de overscan cuesta 3 nodos y
    * no 1. Medir solo en una columna y dar el número por válido para desktop sería
    * exactamente la afirmación sin respaldo que este proyecto evita.

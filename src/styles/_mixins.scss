@@ -2,7 +2,7 @@
 //
 // El objetivo es que ningún componente escriba un `@media (min-width: 1024px)`
 // suelto: los breakpoints viven en un solo lugar (_tokens.scss) y se usan por
-// nombre. Eso es lo que hace mantenible la adaptación a desktop de ADR-0002.
+// nombre. Eso es lo que hace mantenible la adaptación a desktop.
 
 @use 'tokens' as t;
 

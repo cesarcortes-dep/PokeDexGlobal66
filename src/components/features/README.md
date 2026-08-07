@@ -9,6 +9,6 @@ Candidatos según el Figma:
 
 - `PokemonList.vue` — la lista virtualizada (`useVirtualList`), conectada al store
 - `PokemonListItem.vue` — una fila: nombre + estrella. Alto FIJO, lo exige el
-  virtual scroll (ADR-0004)
+  virtual scroll (README: escala)
 - `PokemonDetailCard.vue` — atributos + favorito + compartir
 - `FavoritesToggle.vue` — el switch Todos / Favoritos

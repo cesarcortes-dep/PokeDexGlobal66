@@ -4,15 +4,15 @@
  *
  * Presentación pura: recibe todo por props y no sabe que existen Pinia ni la
  * PokéAPI. La URL del sprite llega armada desde afuera justamente por eso — la
- * regla de `components/ui/` (ADR-0006) impide importar el cliente de API, y el
+ * regla de `components/ui/` (README: arquitectura) impide importar el cliente de API, y el
  * lint la hace cumplir.
  *
- * El color sale del tipo primario (ADR-0007): `--type-{tipo}-card` para el fondo
+ * El color sale del tipo primario (README: el conflicto grande): `--type-{tipo}-card` para el fondo
  * y `--type-{tipo}` para la forma. La forma **es el icono del tipo ampliado**, el
  * mismo `path` que dibuja el chip a 14px. Un asset, dos usos.
  *
  * Alto fijo (`--row-height`): lo necesita el virtual scroll para calcular offsets
- * (ADR-0004). Si esta tarjeta creciera sola, la lista se desalinearía al
+ * (README: escala). Si esta tarjeta creciera sola, la lista se desalinearía al
  * scrollear.
  */
 

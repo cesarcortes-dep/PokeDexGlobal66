@@ -94,7 +94,7 @@ export function stubViewportHeight(px = 600): void {
 
 /**
  * Ancho de ventana, que es lo que decide cuántas columnas tiene la grilla
- * (ADR-0005). jsdom arranca en 1024, así que sin esto los tests medirían siempre
+ * (README: adaptación a desktop). jsdom arranca en 1024, así que sin esto los tests medirían siempre
  * el mismo layout y nunca el de escritorio.
  */
 export function stubViewportWidth(px: number): void {

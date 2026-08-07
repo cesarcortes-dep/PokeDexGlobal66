@@ -1,7 +1,7 @@
 /**
  * Store de favoritos (F1, F7).
  *
- * Decisión (ADR-0003 / supuesto S2): SIN localStorage. El enunciado pide el store
+ * Decisión (README: stack / supuesto S2): SIN localStorage. El enunciado pide el store
  * de Vue y aclara que no hay que persistir. Se pierden al recargar a propósito.
  *
  * Se guardan NOMBRES en un Set, no objetos Pokemon:
