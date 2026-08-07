@@ -10,6 +10,8 @@ import type {
   PokemonDetailResponse,
   PokemonListItem,
   PokemonListResponse,
+  TypeIndex,
+  TypeResponse,
 } from './types'
 
 const BASE_URL = 'https://pokeapi.co/api/v2'
@@ -73,12 +75,74 @@ export async function request<T>(path: string): Promise<T> {
 export async function fetchPokemonList(): Promise<PokemonListItem[]> {
   const page = await request<PokemonListResponse>(`/pokemon?limit=${LIST_LIMIT}`)
 
-  if (page.results.length < page.count) {
-    const full = await request<PokemonListResponse>(`/pokemon?limit=${page.count}`)
-    return full.results
+  const results =
+    page.results.length < page.count
+      ? (await request<PokemonListResponse>(`/pokemon?limit=${page.count}`)).results
+      : page.results
+
+  // El id se resuelve acá, una vez, y no en cada render de cada fila.
+  return results.map((item) => ({ ...item, id: extractIdFromUrl(item.url) }))
+}
+
+/**
+ * Cantidad de tipos reales. La API devuelve 21, pero `stellar`, `unknown` y
+ * `shadow` no son tipos de Pokémon jugables y no aparecen en ningún diseño.
+ * Los 18 primeros ids son exactamente los 18 que define el Figma.
+ */
+const REAL_TYPE_COUNT = 18
+
+/**
+ * Índice de tipos (ADR-0007).
+ *
+ * `GET /pokemon` no devuelve tipos, y el Figma pinta cada fila con el color de su
+ * tipo primario. Pedir el detalle de cada Pokémon costaría 271 KB por fila; estos
+ * 18 requests cuestan 383 KB **en total** y cubren los 1351.
+ *
+ * Van en paralelo a propósito: en serie tardan ~9 s, juntos ~220 ms.
+ */
+export async function fetchTypeIndex(): Promise<TypeIndex> {
+  const types = await Promise.all(
+    Array.from({ length: REAL_TYPE_COUNT }, (_, i) => request<TypeResponse>(`/type/${i + 1}`)),
+  )
+
+  const byPokemon = new Map<number, string[]>()
+  const weaknesses = new Map<string, string[]>()
+
+  for (const type of types) {
+    weaknesses.set(
+      type.name,
+      type.damage_relations.double_damage_from.map((entry) => entry.name),
+    )
+
+    for (const entry of type.pokemon) {
+      const id = extractIdFromUrl(entry.pokemon.url)
+      const current = byPokemon.get(id) ?? []
+      // Se indexa por slot y no con push: los 18 tipos llegan en paralelo, así que
+      // el orden de resolución es arbitrario y "primario" no puede ser "el primero
+      // que llegó". El slot es el único dato que dice cuál es cuál.
+      current[entry.slot - 1] = type.name
+      byPokemon.set(id, current)
+    }
   }
 
-  return page.results
+  // El `filter` limpia los huecos que deja indexar por slot cuando un Pokémon
+  // tiene solo tipo secundario en algún dato raro de la API.
+  for (const [id, names] of byPokemon) {
+    byPokemon.set(id, names.filter(Boolean))
+  }
+
+  return { byPokemon, weaknesses }
+}
+
+/**
+ * URL del sprite a partir del id, sin gastar una llamada a la API (ADR-0007).
+ *
+ * PokéAPI sirve los sprites desde una ruta predecible en GitHub, así que el
+ * `id` que ya se extrajo del listado alcanza. Es una request de imagen, no de
+ * datos: no cuenta contra el presupuesto de llamadas y va lazy.
+ */
+export function spriteUrl(id: number): string {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`
 }
 
 /** Detalle de un Pokémon. Se llama solo al abrirlo, nunca en bucle sobre la lista. */

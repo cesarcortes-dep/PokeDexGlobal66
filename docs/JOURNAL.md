@@ -665,3 +665,120 @@ marcarlos hechos porque "el lint pasa y hay tests"; la revisión encontró dos c
   documento existe para evitar.
 
 **Siguiente:** push para que corra el CI, y fase 0 — el Figma.
+
+---
+
+## 2026-08-06 — Fase 0: el Figma contradice al enunciado
+
+**Contexto:** al fin se abre el diseño. Aparece el conflicto más grande del proyecto, y
+no es de maqueta: la lista muestra sprite, chips de tipo y **color de tarjeta según el
+tipo primario** en cada una de las 1351 filas. `GET /pokemon` devuelve solo `name` y
+`url`. **El diseño no se puede construir con los dos llamados que pide el enunciado.**
+
+**Hecho:** [ADR-0007](./decisions/ADR-0007-conflicto-figma-vs-dos-llamados.md), con
+todo medido antes de decidir.
+
+**Lo que se midió:**
+
+| | |
+|---|---|
+| `GET /pokemon/{name}` | **271 KB** — para dar dos strings de tipo |
+| Sprite pixel `sprites/pokemon/{id}.png` | 543 B – 3 KB |
+| Artwork oficial | 203 KB |
+| 18 × `GET /type/{n}` | **383 KB / 222 ms en paralelo**, cubre los 1351 |
+
+**Decisión:** índice de tipos desde `/type/{n}`, sprites derivados del `id` sin request
+de API, y `/pokemon-species` fuera de alcance.
+
+**Decisiones menores:**
+- **S3 quedó refutado.** Se había asumido que la lista mostraba solo nombres, porque
+  era lo único compatible con "dos llamados". El Figma dice lo contrario. Se marca como
+  refutado en vez de reescribirlo: el supuesto era razonable con la información que
+  había, y borrarlo escondería que hubo que corregir el rumbo.
+- **Se recorta el detalle, no el catálogo.** Salió la propuesta de mostrar solo los
+  primeros 100 Pokémon para simplificar. Se descartó con números: 1351 ya dan menos de
+  30 nodos en el DOM e INP de 6 ms, así que no hay problema de render que simplificar;
+  y cortar el catálogo rompe la búsqueda otra vez —falsos negativos— y elimina la
+  evidencia entera de E7, que es el criterio que más pesa. Recortar `/pokemon-species`
+  cuesta tres campos de una pantalla; recortar el catálogo cuesta el criterio.
+
+**Aprendido / fricción:**
+- **El detalle pesa 271 KB.** Ese número solo dio vuelta la decisión: la idea inicial
+  era pedir el detalle de cada fila visible, y pintar la primera pantalla habría
+  costado 5.4 MB — 60 veces el listado completo. Medir antes de implementar evitó
+  construir la opción cara.
+- **`GET /type/{n}` resuelve dos problemas de una.** Trae los Pokémon de ese tipo con
+  su `slot` —el tipo primario que gobierna el color— y además `damage_relations`, que
+  son las debilidades del detalle. Un endpoint, dos requisitos.
+- **F3 pasa de `[x]` a `[!]`.** El arranque va de 1 request a 19. No se deja el
+  requisito marcado como cumplido con una nota escondida en un ADR: se cambia el estado
+  y se explica arriba. La defensa es la comparación, no la excusa — **19 requests
+  constantes contra 1351 proporcionales**, que es la desviación más barata posible del
+  requisito sin romper el diseño ni la escala.
+- **La idea del loader como precarga de imágenes se descartó, pero el instinto era
+  bueno.** Precargar 1351 sprites anula el virtual scroll. Lo que sí hay ahora es una
+  espera real de datos —~475 KB entre listado e índice de tipos— y ahí el loader de F5
+  deja de tapar 190 ms y pasa a servir para algo: cuando la lista aparece, aparece
+  completa en vez de con tarjetas grises que se colorean de a poco.
+- Geometría de la lista, derivada del panel de Layout (328×558, gap 12, 5 tarjetas):
+  **102 px por tarjeta, paso real de 114 px** con el gap. El `ROW_HEIGHT = 60` actual es
+  un placeholder que hay que cambiar — gobierna el cálculo del virtual scroll.
+- **"favoritos" es una pestaña de la barra inferior**, no un toggle dentro de la lista.
+  Las pastillas Todos/Favoritos que se construyeron no son lo que pide el diseño.
+
+**Siguiente:** implementar la capa de datos de ADR-0007 —índice de tipos y URL de
+sprite—, que no depende de los tokens. Después, tokens, iconos y maqueta.
+
+---
+
+## 2026-08-06 — Tokens, iconos y la capa de datos de ADR-0007
+
+**Contexto:** con el Figma abierto, se baja todo lo que no depende de maquetar:
+tokens, iconos y los datos que el diseño vuelve obligatorios.
+
+**Hecho:**
+- `_tokens.scss` reescrito con los valores reales: paleta de los 18 tipos, textos
+  (#121212 / #424242), borde 1.5px #E0E0E0, radios de 16px, sin sombra.
+- `typeIcons.ts` con los 18 iconos, `TypeChip.vue` y `AppIcon.vue`.
+- `fetchTypeIndex()`, `spriteUrl()` y el store `types`. **107 tests pasando.**
+- Verificado contra la API real: **1351 de 1351 con tipo asignado, cero huecos**, y
+  el arranque completo —lista + índice en paralelo— en **213 ms**.
+
+**Decisiones menores:**
+- **El fondo claro de la tarjeta se deriva del color del chip**, no se guarda aparte.
+  Una fuente por tipo en vez de 36 valores: si el Figma corrige un color, su tarjeta
+  se corrige sola. Se resuelve en compilación con `color.mix`, no en runtime.
+- **Los 18 iconos van como datos y no como 18 componentes.** Son un `path` cada uno
+  (salvo `ice`) y los dibuja el mismo componente. El `fill` fijo del Figma pasó a
+  `currentColor` para que el color lo decida quien lo use.
+- **El `id` se resuelve al cargar la lista, no en cada render.** `PokemonListItem`
+  ahora lo incluye: la lista lo necesita para el `N°001` y para la URL del sprite, y
+  son 1351 filas.
+- **El índice se arma por `slot`, no con `push`.** Los 18 requests van en paralelo, así
+  que el orden de resolución es arbitrario y "tipo primario" no puede ser "el primero
+  que llegó". Hay un test que invierte el orden de las respuestas y verifica que
+  `bulbasaur` siga saliendo `['grass', 'poison']`.
+- **`typesOf()` devuelve siempre el mismo array vacío**, no uno nuevo por llamada: una
+  referencia distinta en cada render rompería la memoización de cualquier `computed`
+  que lo use.
+- **Las debilidades son una simplificación consciente.** Se unen las de todos los tipos
+  del Pokémon y se quitan las que el propio Pokémon tiene. El cálculo real multiplica
+  multiplicadores —un tipo puede cancelar la debilidad del otro— y exigiría también
+  `half_damage_from` y `no_damage_from`. El Figma no muestra multiplicadores. Está
+  anotado en el código como aproximación, no como error.
+
+**Aprendido / fricción:**
+- **Renombrar tokens dejó referencias muertas y nada avisó.** `--c-primary`,
+  `--fs-small`, `--c-surface` y `--shadow-card` quedaron apuntando a la nada: un
+  `var()` inexistente no rompe el build ni el lint, simplemente no aplica la
+  propiedad. Se habrían visto como estilos que "no funcionan", sin ningún error. Hubo
+  que barrerlas a mano.
+- **Los tests pasaron y `type-check` falló.** Cambiar `PokemonListItem` para incluir
+  `id` dejó un helper de test sin el campo; Vitest no chequea tipos, así que la suite
+  quedó verde igual. Es exactamente el motivo por el que el CI corre los dos comandos
+  y no solo los tests.
+- Cuatro iconos venían del Figma como `Vector.svg`, `Vector-1.svg`… sin nombre. Se
+  identificaron por la forma —puño, ala, antenas, gota— y se confirmaron después.
+
+**Siguiente:** maquetar la tarjeta de la lista con todo esto junto. Ahí entra
+`ROW_HEIGHT = 102` con gap de 12.

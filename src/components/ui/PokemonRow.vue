@@ -36,7 +36,7 @@ defineProps<{ name: string }>()
   // acción sobre ese lado (la estrella de favorito). Así el nombre trunca antes
   // de meterse debajo.
   padding: 0 var(--sp-8) 0 var(--sp-4);
-  background-color: var(--c-surface);
+  background-color: var(--c-bg);
   border-bottom: 1px solid var(--c-border);
 
   &__name {

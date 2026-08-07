@@ -5,7 +5,8 @@ Repo: <https://github.com/cesarcortes-dep/PokeDexGlobal66>
 Cada requisito se transcribe **literal** y se convierte en ítems verificables.
 Nada pasa a `[x]` sin poder demostrarlo corriendo la app.
 
-Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
+Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado o
+cumplido con desvío documentado
 
 ## Funcionales
 
@@ -13,7 +14,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 |----|---------------------|--------------------|--------|
 | F1 | "hacer una lista de pokémons Favoritos" | Marcar/desmarcar favorito desde lista y desde detalle; vista filtrada solo-favoritos; estado consistente entre ambas vistas | `[x]` **Verificado en navegador:** el favorito marcado en la lista aparece marcado al entrar al detalle, y sigue marcado al volver, también navegando por el detalle de otros Pokémon. `FavoriteStar` en cada fila y en el detalle, pestañas Todos/Favoritos, estado vacío propio ("todavía no marcaste ninguno") distinto del de búsqueda sin resultados. La consistencia entre vistas es por construcción: un solo store, sin sincronización |
 | F2 | "La aplicación debe ser creada usando Vue.js" | `package.json` con Vue 3; app monta y buildea | `[x]` Vue 3.5, `npm run build` en verde y **verificado en navegador**: la app monta y `ListView` pinta el listado. Lo que faltaba era justamente esto — `curl` no ejecuta JS |
-| F3 | "solo serán necesarios dos llamados: `GET /api/v2/pokemon`" | Un solo request de listado en toda la sesión; verificado en Network | `[x]` **Verificado en Network:** una sola llamada, `pokeapi.co/api/v2/pokemon?limit=2000`, 200. Payload de 1351 ítems / 91 KB / ~190 ms medido aparte contra la API (la captura salió `from disk cache`, así que no midió red). Sostenido por tests: `loadList()` es idempotente incluso con llamadas concurrentes |
+| F3 | "solo serán necesarios dos llamados: `GET /api/v2/pokemon`" | Un solo request de listado en toda la sesión; verificado en Network | `[!]` **Cumplido para el listado, con un desvío consciente.** Una sola llamada a `/pokemon?limit=2000` (1351 ítems / 91 KB / ~190 ms), verificada en Network e idempotente incluso con llamadas concurrentes. **Pero el arranque hace 19 requests, no 1:** el Figma pinta cada fila con su tipo y su color, y `/pokemon` no devuelve tipos. Se agregan 18 `GET /type/{n}` (383 KB, 222 ms en paralelo, **costo constante**) — ver [ADR-0007](./decisions/ADR-0007-conflicto-figma-vs-dos-llamados.md). La alternativa fiel al literal es lista sin color por tipo, y está a un `computed` de distancia |
 | F4 | "`GET /api/v2/pokemon/${name}`" para info específica | Detalle se pide solo al abrir un Pokémon; resultado cacheado (no re-pide al reabrir) | `[x]` **Verificado en Network:** abrir `bulbasaur` dispara una request 200; volver al listado no repite la del listado; **reabrir el mismo Pokémon no dispara ninguna**. `getDetail()` cachea por nombre en un `Map` y deduplica requests concurrentes; `toPokemon()` convierte a kg/m y ordena los tipos por `slot` |
 | F5 | "pantalla de loading … efecto css sobre la imagen de la pokebola" | Loader con animación CSS (no GIF, no lib); visible en carga inicial | `[ ]` |
 | F6 | "El botón compartir debe copiar en el portapapeles el nombre del pokemon con sus atributos separados por coma" | Click copia string `nombre,attr,attr,…`; feedback visible al usuario; fallback si Clipboard API no disponible | `[~]` `useClipboard` implementado con Clipboard API, fallback a `execCommand` para contexto sin HTTPS y para permiso denegado, y feedback que se apaga solo. **Falta el botón en el detalle** y confirmar contra el Figma qué atributos y en qué orden (supuesto S4) |
@@ -52,12 +53,21 @@ Ambigüedades resueltas por mi cuenta. Documentadas para poder defenderlas.
   enunciado pide explícitamente store y aclara que no hay que persistir. Se
   implementa literal. Va documentado en el README como decisión consciente para que
   no se lea como omisión. Ver [ADR-0003](./decisions/ADR-0003-stack.md).
-- **S3 — La lista muestra solo nombres, no sprites.** Es lo único compatible con
-  "solo serán necesarios dos llamados": traer sprites de 1300 Pokémon exigiría 1300
-  requests de detalle. La imagen aparece en el detalle. *(Confirmar contra el Figma.)*
+- **S3 — ~~La lista muestra solo nombres, no sprites.~~ REFUTADO por el Figma.** El
+  diseño muestra sprite, chips de tipo y color por tipo en cada fila. El supuesto era
+  razonable con la información que había y resultó equivocado al ver el diseño. Se
+  resuelve así: el **sprite se deriva del `id`** (URL predecible de PokéAPI, cero
+  requests de API) y los **tipos salen de un índice** construido con 18 `GET /type/{n}`
+  al arrancar. Ver [ADR-0007](./decisions/ADR-0007-conflicto-figma-vs-dos-llamados.md).
 - **S4 — "Sus atributos" en el botón compartir** = los que muestra la pantalla de
   detalle según el Figma (name, weight, height, types), en ese orden.
   *(Confirmar contra el Figma.)*
+- **S5 — El detalle se implementa sin `/pokemon-species`.** El Figma pide descripción,
+  categoría y ratio de género, que solo salen de ese endpoint. Se recortan
+  conscientemente: quitan tres campos de una pantalla, contra la alternativa de
+  recortar el catálogo, que quitaría la evidencia del criterio E7. Habilidad y
+  debilidades **sí** se implementan — la primera viene en `/pokemon/{name}` y las
+  segundas en el índice de tipos que ya se pide.
 
 ## Fuera de alcance (decidido explícitamente)
 

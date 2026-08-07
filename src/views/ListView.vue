@@ -208,9 +208,8 @@ store.loadList()
   &__viewport {
     height: 70vh;
     overflow-y: auto;
-    background-color: var(--c-surface);
+    background-color: var(--c-bg);
     border-radius: var(--radius-card);
-    box-shadow: var(--shadow-card);
 
     // Aísla el layout y el pintado del resto de la página. `size` queda fuera a
     // propósito: el sizer de adentro es quien define el recorrido del scroll.
@@ -239,18 +238,18 @@ store.loadList()
   &__tab {
     padding: var(--sp-2) var(--sp-6);
     color: var(--c-text-muted);
-    background-color: var(--c-surface);
+    background-color: var(--c-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-pill);
 
     &--active {
-      color: var(--c-surface);
-      background-color: var(--c-primary);
-      border-color: var(--c-primary);
+      color: var(--c-bg);
+      background-color: var(--c-tab-active);
+      border-color: var(--c-tab-active);
     }
 
     &:focus-visible {
-      outline: 2px solid var(--c-primary);
+      outline: 2px solid var(--c-tab-active);
       outline-offset: 2px;
     }
   }
@@ -265,7 +264,7 @@ store.loadList()
     text-decoration: none;
 
     &:focus-visible {
-      outline: 2px solid var(--c-primary);
+      outline: 2px solid var(--c-tab-active);
       outline-offset: -2px;
     }
   }

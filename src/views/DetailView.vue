@@ -125,16 +125,15 @@ watch(
   &__back {
     display: inline-block;
     margin-bottom: var(--sp-4);
-    font-size: var(--fs-small);
+    font-size: var(--fs-body);
     color: var(--c-text-muted);
   }
 
   &__card {
     padding: var(--sp-6);
     text-align: center;
-    background-color: var(--c-surface);
+    background-color: var(--c-bg);
     border-radius: var(--radius-card);
-    box-shadow: var(--shadow-card);
   }
 
   &__image {

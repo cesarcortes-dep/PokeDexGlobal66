@@ -48,16 +48,16 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
     padding: var(--sp-3) var(--sp-4);
     font: inherit;
     color: var(--c-text);
-    background-color: var(--c-surface);
+    background-color: var(--c-bg);
     border: 1px solid var(--c-border);
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-input);
 
     &::placeholder {
       color: var(--c-text-muted);
     }
 
     &:focus-visible {
-      outline: 2px solid var(--c-primary);
+      outline: 2px solid var(--c-tab-active);
       outline-offset: 2px;
     }
   }

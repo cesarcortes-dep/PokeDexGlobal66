@@ -21,6 +21,7 @@ function makeItems(...names: string[]): PokemonListItem[] {
   return names.map((name, i) => ({
     name,
     url: `https://pokeapi.co/api/v2/pokemon/${i + 1}/`,
+    id: i + 1,
   }))
 }
 

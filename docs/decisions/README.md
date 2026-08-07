@@ -40,3 +40,4 @@ Qué se vuelve fácil, qué se vuelve caro, qué queda por revisar.
 | [0004](./ADR-0004-estrategia-de-datos-y-escala.md) | Estrategia de datos y escala | Aceptada |
 | 0005 | *Reservado* — layout desktop, depende del Figma | Pendiente |
 | [0006](./ADR-0006-arquitectura-por-capas.md) | Arquitectura por capas | Aceptada |
+| [0007](./ADR-0007-conflicto-figma-vs-dos-llamados.md) | El Figma pide datos que "dos llamados" no alcanzan | Aceptada (revisa 0004) |

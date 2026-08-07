@@ -35,7 +35,31 @@ export function makeListItems(n: number): PokemonListItem[] {
   return Array.from({ length: n }, (_, i) => ({
     name: `pokemon-${i}`,
     url: `https://pokeapi.co/api/v2/pokemon/${i + 1}/`,
+    id: i + 1,
   }))
+}
+
+/**
+ * Respuesta de `/type/{n}` recortada a lo que usa el índice.
+ *
+ * `pokemonIds` acepta `[id, slot]` para poder armar Pokémon de dos tipos.
+ */
+export function makeTypeResponse(
+  name: string,
+  pokemonIds: Array<number | [number, number]>,
+  doubleDamageFrom: string[] = [],
+) {
+  return {
+    name,
+    pokemon: pokemonIds.map((entry) => {
+      const [id, slot] = Array.isArray(entry) ? entry : [entry, 1]
+      return {
+        pokemon: { name: `pokemon-${id}`, url: `https://pokeapi.co/api/v2/pokemon/${id}/` },
+        slot,
+      }
+    }),
+    damage_relations: { double_damage_from: doubleDamageFrom.map((n) => ({ name: n })) },
+  }
 }
 
 /**

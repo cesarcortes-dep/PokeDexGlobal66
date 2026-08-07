@@ -14,8 +14,11 @@ import {
   extractIdFromUrl,
   fetchPokemonByName,
   fetchPokemonList,
+  fetchTypeIndex,
+  spriteUrl,
   toPokemon,
 } from '../pokeApi'
+import { makeTypeResponse } from '@/__tests__/fixtures'
 import type { PokemonDetailResponse, PokemonListResponse } from '../types'
 
 /** Respuesta de listado mínima, con el `count` coherente con los `results`. */
@@ -77,13 +80,17 @@ describe('fetchPokemonList', () => {
     expect(limit).toBeGreaterThan(1351) // count real medido el 2026-08-05
   })
 
-  it('devuelve los results tal cual los da la API', async () => {
+  it('agrega el id resolviéndolo una vez, no en cada render', async () => {
     mockFetchOk(listResponse(['bulbasaur', 'ivysaur']))
 
     const items = await fetchPokemonList()
 
     expect(items).toHaveLength(2)
-    expect(items[0]).toEqual({ name: 'bulbasaur', url: 'https://pokeapi.co/api/v2/pokemon/1/' })
+    expect(items[0]).toEqual({
+      name: 'bulbasaur',
+      url: 'https://pokeapi.co/api/v2/pokemon/1/',
+      id: 1,
+    })
   })
 
   it('reintenta con el count real si el limit se quedó corto', async () => {
@@ -137,6 +144,76 @@ function detailResponse(overrides: Partial<PokemonDetailResponse> = {}): Pokemon
     ...overrides,
   }
 }
+
+describe('spriteUrl', () => {
+  it('arma la url del sprite desde el id, sin request a la API', () => {
+    expect(spriteUrl(25)).toContain('/pokemon/25.png')
+  })
+})
+
+describe('fetchTypeIndex', () => {
+  /** Los 18 tipos reales, con solo unos pocos poblados. */
+  function mockTypes() {
+    const responses = Array.from({ length: 18 }, (_, i) => makeTypeResponse(`tipo-${i + 1}`, []))
+    // grass: bulbasaur en slot 1 · poison: bulbasaur en slot 2 · fire: charmander
+    responses[0] = makeTypeResponse('grass', [[1, 1]], ['fire', 'ice'])
+    responses[1] = makeTypeResponse('poison', [[1, 2]], ['ground', 'psychic'])
+    responses[2] = makeTypeResponse('fire', [4], ['water'])
+    return responses
+  }
+
+  it('pide los 18 tipos reales, no los 21 que devuelve la API', async () => {
+    const fetchMock = mockFetchOk(...mockTypes())
+
+    await fetchTypeIndex()
+
+    expect(fetchMock).toHaveBeenCalledTimes(18)
+  })
+
+  it('indexa los tipos por id de Pokémon, ordenados por slot', async () => {
+    mockFetchOk(...mockTypes())
+
+    const index = await fetchTypeIndex()
+
+    expect(index.byPokemon.get(1)).toEqual(['grass', 'poison'])
+    expect(index.byPokemon.get(4)).toEqual(['fire'])
+  })
+
+  it('respeta el slot aunque las respuestas lleguen en otro orden', async () => {
+    // Los 18 van en paralelo: el orden de resolución es arbitrario, así que el
+    // tipo primario no puede ser "el primero que llegó".
+    const responses = mockTypes()
+    ;[responses[0], responses[1]] = [responses[1]!, responses[0]!]
+    mockFetchOk(...responses)
+
+    const index = await fetchTypeIndex()
+
+    expect(index.byPokemon.get(1)).toEqual(['grass', 'poison'])
+  })
+
+  it('guarda las debilidades de cada tipo', async () => {
+    mockFetchOk(...mockTypes())
+
+    const index = await fetchTypeIndex()
+
+    expect(index.weaknesses.get('grass')).toEqual(['fire', 'ice'])
+  })
+
+  it('propaga el error si falla alguno de los 18', async () => {
+    const responses = mockTypes()
+    const fetchMock = vi.fn()
+    responses.forEach((payload, i) => {
+      fetchMock.mockResolvedValueOnce(
+        i === 5
+          ? { ok: false, status: 500, json: async () => ({}) }
+          : { ok: true, status: 200, json: async () => payload },
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchTypeIndex()).rejects.toThrow(PokeApiError)
+  })
+})
 
 describe('toPokemon', () => {
   it('convierte hectogramos a kilogramos', () => {
