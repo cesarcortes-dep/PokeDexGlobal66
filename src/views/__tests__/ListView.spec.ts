@@ -64,6 +64,12 @@ async function search(wrapper: ReturnType<typeof mountView>, text: string) {
 }
 
 beforeEach(() => {
+  // El piso de 600 ms del loader dejaría la pantalla de carga puesta después de
+  // que llegan los datos, y estos tests corren con reloj real: verían el loader
+  // en vez de la lista. `?loader=0` lo desactiva. Que el piso funcione lo prueba
+  // `useMinimumDuration.spec`, que sí controla el tiempo.
+  window.history.replaceState({}, '', '/?loader=0')
+
   setActivePinia(createPinia())
   fetchPokemonListMock.mockReset()
   fetchPokemonListMock.mockResolvedValue(makeListItems(TOTAL_POKEMON))

@@ -5,9 +5,6 @@
  * Una View orquesta: pide datos al store y compone componentes.
  * No maqueta detalles ni hace fetch — eso vive en components/ y en api/.
  *
- * TODO:
- *  - PokeballLoader con animación CSS en lugar del texto de carga (F5)
- *  - maqueta real del Figma
  */
 
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -17,11 +14,13 @@ import { spriteUrl } from '@/api/pokeApi'
 import { usePokemonStore } from '@/stores/pokemon'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useTypesStore } from '@/stores/types'
+import { useMinimumDuration } from '@/composables/useMinimumDuration'
 import { useSearch } from '@/composables/useSearch'
 import { useVirtualList } from '@/composables/useVirtualList'
 import AppNav from '@/components/ui/AppNav.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import FavoriteStar from '@/components/ui/FavoriteStar.vue'
+import PokeballLoader from '@/components/ui/PokeballLoader.vue'
 import PokemonCard from '@/components/ui/PokemonCard.vue'
 import SearchInput from '@/components/ui/SearchInput.vue'
 
@@ -83,6 +82,52 @@ const columns = computed(
 
 const store = usePokemonStore()
 const { list, isLoadingList, error } = storeToRefs(store)
+
+/**
+ * Cuánto se sostiene el loader como mínimo (F5).
+ *
+ * El listado responde en ~250 ms, así que sin piso el loader aparece y
+ * desaparece dentro del mismo pestañeo: se lee como glitch, no como carga.
+ * 600 ms alcanzan para que sea una transición con principio y fin.
+ *
+ * `?loader=5000` lo estira para mirar la animación sin simular red lenta en
+ * DevTools. Es un parámetro de demo, no una función de la app: por eso vive en
+ * la URL y no en una constante. Fijar 5 s para todo el mundo haría la app lenta
+ * de verdad a cambio de que se vea una animación — el intercambio equivocado.
+ *
+ * El tope existe porque el valor lo escribe cualquiera: sin él, un cero de más
+ * deja la lista detrás del loader durante minutos.
+ */
+const LOADER_MIN_MS = 600
+const LOADER_MAX_MS = 15_000
+
+/**
+ * Se lee de `location` y no de `useRoute()`, y una sola vez.
+ *
+ * De `location` porque el router arranca en `START_LOCATION`, con la query
+ * vacía, hasta que resuelve la primera navegación — justo el instante en que
+ * este número hace falta. Una sola vez porque es una perilla de demo: cambiarla
+ * a mitad de una carga no tiene sentido.
+ */
+function readLoaderOverride(): number | null {
+  if (typeof window === 'undefined') return null
+
+  const raw = new URLSearchParams(window.location.search).get('loader')
+  if (raw === null) return null
+
+  const requested = Number(raw)
+  if (!Number.isFinite(requested) || requested < 0) return null
+
+  return Math.min(requested, LOADER_MAX_MS)
+}
+
+const loaderMinMs = readLoaderOverride() ?? LOADER_MIN_MS
+
+/**
+ * Sostiene lo que se MUESTRA, no lo que se pide: la request sale igual de rápido
+ * y los datos quedan en el store apenas llegan.
+ */
+const showLoader = useMinimumDuration(isLoadingList, loaderMinMs)
 
 /**
  * El índice de tipos: sin él las tarjetas no tienen color ni chips (ADR-0007).
@@ -172,8 +217,13 @@ store.loadList()
       que mide `useVirtualList`. Si viviera detrás de un v-else, no existiría al
       montar y habría que esperar un tick para medirlo.
     -->
-    <div ref="containerRef" class="list-view__viewport" :aria-busy="isLoadingList">
-      <p v-if="isLoadingList" class="list-view__status" role="status">Cargando Pokémon…</p>
+    <div ref="containerRef" class="list-view__viewport" :aria-busy="showLoader">
+      <!--
+        El loader vive DENTRO del viewport y no encima de la pantalla: así ocupa
+        exactamente el espacio que después ocupa la lista y no hay salto de
+        layout cuando llegan los datos (CLS 0).
+      -->
+      <PokeballLoader v-if="showLoader" class="list-view__loader" />
 
       <div v-else-if="error" class="list-view__status" role="alert">
         <p>{{ error }}</p>
@@ -318,6 +368,12 @@ store.loadList()
     position: absolute;
     top: var(--sp-2);
     right: var(--sp-2);
+  }
+
+  /* Centrado en el hueco que va a ocupar la lista, no pegado arriba. */
+  &__loader {
+    height: 100%;
+    align-content: center;
   }
 
   &__status {
