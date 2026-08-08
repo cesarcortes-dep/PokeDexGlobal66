@@ -150,7 +150,9 @@ const shareText = computed(() => {
           <!-- Ocupa las dos columnas: CATEGORÍA, que iba al lado, queda fuera de alcance. -->
           <div v-if="pokemon.ability" class="detail-view__stat detail-view__stat--wide">
             <dt class="detail-view__stat-label"><AppIcon name="ability" :size="14" /> HABILIDAD</dt>
-            <dd class="detail-view__stat-value">{{ pokemon.ability }}</dd>
+            <dd class="detail-view__stat-value detail-view__stat-value--name">
+              {{ pokemon.ability }}
+            </dd>
           </div>
         </dl>
 
@@ -335,9 +337,14 @@ const shareText = computed(() => {
     margin: 0;
     text-align: center;
     background-color: var(--c-bg);
-    text-transform: capitalize;
     border: var(--border-width) solid var(--c-border);
     border-radius: var(--radius-card);
+
+    // Solo lo que viene en minúscula de la API. Aplicarlo a todos los valores
+    // rompía las unidades: "kg" pasaba a "Kg" y "m" a "M", que es mega.
+    &--name {
+      text-transform: capitalize;
+    }
   }
 
   &__weaknesses {

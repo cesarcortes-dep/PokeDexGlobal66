@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Alto fijo (`--row-height`): el virtual scroll calcula offsets con ese número.
 
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import TypeChip from './TypeChip.vue'
 import { TYPE_ICONS } from './typeIcons'
 
@@ -11,6 +11,18 @@ const props = defineProps<{
   types: string[]
   imageUrl: string
 }>()
+
+// Algunas formas alternativas no tienen sprite en la ruta derivada del id, y un
+// <img> roto pinta el icono de imagen faltante. Sin sprite queda la forma del
+// tipo, que ya es lo que le da identidad a la tarjeta.
+//
+// Se reinicia al cambiar la url porque el virtual scroll recicla estos nodos:
+// sin esto, una tarjeta que falló deja al siguiente Pokémon sin imagen.
+const spriteFailed = ref(false)
+watch(
+  () => props.imageUrl,
+  () => (spriteFailed.value = false),
+)
 
 // El tipo del slot 1 gobierna el color; sin tipos todavía, gris neutro.
 const primary = computed(() => props.types[0] ?? 'normal')
@@ -53,6 +65,7 @@ const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
 
       <!-- Dimensiones fijas: reservan el hueco y la lista no salta al cargar. -->
       <img
+        v-if="!spriteFailed"
         class="pokemon-card__sprite"
         :src="imageUrl"
         alt=""
@@ -60,6 +73,7 @@ const number = computed(() => `N°${String(props.id).padStart(3, '0')}`)
         height="72"
         loading="lazy"
         decoding="async"
+        @error="spriteFailed = true"
       />
     </div>
   </article>

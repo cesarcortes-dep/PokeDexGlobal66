@@ -14,7 +14,7 @@ puede mostrar.
 npm install
 npm run dev        # servidor de desarrollo
 npm run build      # type-check + build de producción
-npm run test:unit  # 126 tests
+npm run test:unit  # 128 tests
 npm run lint       # ESLint
 ```
 
@@ -284,7 +284,7 @@ listado exigiría 1351 requests. La imagen aparece en el detalle.
 
 ## Tests
 
-126 tests, corriendo en [CI](./.github/workflows/ci.yml) en cada push y cada pull
+128 tests, corriendo en [CI](./.github/workflows/ci.yml) en cada push y cada pull
 request: type-check, lint, tests y build. Ningún paso lleva `continue-on-error` — un
 check que no puede fallar no verifica nada.
 
@@ -303,6 +303,7 @@ si las capas existen de verdad.
 | `views/__tests__/DetailView.spec.ts` | Que reabrir un Pokémon ya visto no dispara request, y qué copia el botón compartir | solo la red |
 | `stores/__tests__/types.spec.ts` | Que el tipo primario sea el del slot 1 aunque los 18 requests lleguen en cualquier orden | el cliente de API |
 | `components/ui/__tests__/PokeballLoader.spec.ts` | Lo que se rompe en silencio: que el SVG no reintroduzca un `id` global, y que el texto de carga no se vuelva `sr-only` | nada |
+| `components/ui/__tests__/PokemonCard.spec.ts` | Que un sprite inexistente no deje el icono de imagen rota, y que el nodo reciclado por el virtual scroll no arrastre ese fallo al siguiente Pokémon | nada |
 | `composables/__tests__/useMinimumDuration.spec.ts` | Que el loader se sostenga lo justo: descuenta el tiempo ya transcurrido, no encadena mínimos entre dos cargas seguidas y no deja timers vivos al desmontar | el reloj |
 
 ## Estado
